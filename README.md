@@ -49,8 +49,7 @@ add a Django backend and wire it in.
 ## 🗺️ Feature status (Phase 1)
 
 Implemented in this repo plus the **shared foundation** (layout, theming, i18n, stores,
-mock data, reusable cards, routing). Sections 2.8–2.11 are owned by teammates and ship as
-clearly-marked stub routes that plug into the same foundation.
+mock data, reusable cards, routing). 
 
 | #    | Section (PDF)              | Status                                       |
 | ---- | -------------------------- | -------------------------------------------- |
@@ -61,10 +60,10 @@ clearly-marked stub routes that plug into the same foundation.
 | 2.5  | Settings                   | ✅ Implemented                               |
 | 2.6  | Notifications              | ✅ Implemented                               |
 | 2.7  | Playlists                  | ✅ Implemented                               |
-| 2.8  | Albums & singles           | 🚧 Teammate stub                             |
-| 2.9  | Music player               | 🚧 Teammate stub (placeholder slot reserved) |
-| 2.10 | Works management (artists) | 🚧 Teammate stub                             |
-| 2.11 | Support / admin dashboard  | 🚧 Teammate stub                             |
+| 2.8  | Albums & singles           | 🚧                                           |
+| 2.9  | Music player               | 🚧                                           |
+| 2.10 | Works management (artists) | 🚧                                           |
+| 2.11 | Support / admin dashboard  | 🚧                                           |
 
 ## 🚀 Getting started
 
@@ -129,7 +128,6 @@ See [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for architecture & coding rules, 
 
 ## 🖼️ Screenshots
 
-> _Add screenshots of the Login, Home, Playlists and Settings pages here (dark + light)._
 
 ## 🛣️ Roadmap
 
@@ -137,10 +135,5 @@ See [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for architecture & coding rules, 
 - **Phase 2 — Backend:** Django + DRF, real auth, file uploads, payments, aggregated
   reports, and integration with this frontend. Optional: Dockerized `docker compose up`.
 
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) (branching, Conventional Commits, checks).
-
-## 📄 License
-
+## License
 [MIT](LICENSE) © 2026 Trimir Team.
