@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Theme tokens. Each color is stored as an "R G B" triplet so Tailwind's
+ * `<alpha-value>` modifier works (e.g. `bg-accent/50`).
+ * Dark is the default; `[data-theme="light"]` overrides it.
+ */
+:root,
+[data-theme='dark'] {
+  --bg: 14 11 26;
+  --surface: 21 16 43;
+  --surface-2: 31 24 56;
+  --text: 244 241 255;
+  --text-muted: 169 159 199;
+  --accent: 168 85 247;
+  --accent-2: 139 92 246;
+  --border: 44 35 80;
+  --glow: 168 85 247;
+  --danger: 244 63 94;
+  --success: 34 197 94;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: 247 250 247;
+  --surface: 255 255 255;
+  --surface-2: 238 245 239;
+  --text: 15 29 20;
+  --text-muted: 75 99 83;
+  --accent: 22 163 74;
+  --accent-2: 29 185 84;
+  --border: 215 230 219;
+  --glow: 29 185 84;
+  --danger: 220 38 38;
+  --success: 22 163 74;
+  color-scheme: light;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg text-text antialiased;
+    font-family: 'Vazirmatn', system-ui, 'Segoe UI', sans-serif;
+  }
+
+  /* Themed scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-surface-2;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-accent/40;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg;
+  }
+}
+
+@layer components {
+  .card-surface {
+    @apply rounded-2xl border border-border bg-surface p-4 transition-colors;
+  }
+
+  .input-base {
+    @apply w-full rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-text
+      placeholder:text-muted focus:border-accent focus:outline-none;
+  }
+}
