@@ -8,7 +8,7 @@ _Trimir = **Tri** + Am**ir** — built by three Amirs._
 
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/TailwindCSS-3-38bdf8?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-ready-5a0fc8?logo=pwa&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
@@ -49,25 +49,25 @@ add a Django backend and wire it in.
 ## 🗺️ Feature status (Phase 1)
 
 Implemented in this repo plus the **shared foundation** (layout, theming, i18n, stores,
-mock data, reusable cards, routing). 
+mock data, reusable cards, routing).
 
-| #    | Section (PDF)              | Status                                       |
-| ---- | -------------------------- | -------------------------------------------- |
-| 2.1  | Login & Register           | ✅ Implemented                               |
-| 2.2  | Home                       | ✅ Implemented                               |
-| 2.3  | User profile + management  | ✅ Implemented                               |
-| 2.4  | Artist profile             | ✅ Implemented                               |
-| 2.5  | Settings                   | ✅ Implemented                               |
-| 2.6  | Notifications              | ✅ Implemented                               |
-| 2.7  | Playlists                  | ✅ Implemented                               |
-| 2.8  | Albums & singles           | 🚧                                           |
-| 2.9  | Music player               | 🚧                                           |
-| 2.10 | Works management (artists) | 🚧                                           |
-| 2.11 | Support / admin dashboard  | 🚧                                           |
+| #    | Section (PDF)              | Status         |
+| ---- | -------------------------- | -------------- |
+| 2.1  | Login & Register           | ✅ Implemented |
+| 2.2  | Home                       | ✅ Implemented |
+| 2.3  | User profile + management  | ✅ Implemented |
+| 2.4  | Artist profile             | ✅ Implemented |
+| 2.5  | Settings                   | ✅ Implemented |
+| 2.6  | Notifications              | ✅ Implemented |
+| 2.7  | Playlists                  | ✅ Implemented |
+| 2.8  | Albums & singles           | 🚧             |
+| 2.9  | Music player               | 🚧             |
+| 2.10 | Works management (artists) | 🚧             |
+| 2.11 | Support / admin dashboard  | 🚧             |
 
 ## 🚀 Getting started
 
-Requires **Node 18+** and npm.
+Requires **Node 20.19+** and npm.
 
 ```bash
 npm install        # installs deps + git hooks
@@ -128,7 +128,6 @@ See [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for architecture & coding rules, 
 
 ## 🖼️ Screenshots
 
-
 ## 🛣️ Roadmap
 
 - **Phase 1 — Frontend (mock):** this repository.
@@ -136,4 +135,5 @@ See [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for architecture & coding rules, 
   reports, and integration with this frontend. Optional: Dockerized `docker compose up`.
 
 ## License
+
 [MIT](LICENSE) © 2026 Trimir Team.
