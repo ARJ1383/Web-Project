@@ -2,10 +2,7 @@ import { Link } from 'react-router-dom';
 import { Disc3 } from 'lucide-react';
 import type { Album } from '@/types/models';
 
-/**
- * Album/single artwork card. Links to the album detail page (section 2.8 —
- * owned by a teammate; currently a stub route).
- */
+/** Album/single artwork card that links to the album detail page. */
 export function AlbumCard({ album }: { album: Album }) {
   return (
     <Link

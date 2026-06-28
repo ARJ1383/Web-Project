@@ -4,9 +4,9 @@
 
 <!-- What does this PR change and why? -->
 
-## Related section(s)
+## Area
 
-<!-- e.g. §2.7 Playlists, §3.4 File upload, or "tooling" -->
+<!-- e.g. Playlists, Auth, Settings, or "tooling" -->
 
 ## Type of change
 

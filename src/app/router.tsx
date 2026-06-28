@@ -16,8 +16,8 @@ import {
   PlayerPage,
   ArtistStudioPage,
   DashboardPage,
-} from '@/features/_stubs/StubPage';
-import { NotFoundPage } from '@/features/_stubs/NotFoundPage';
+} from '@/features/placeholder/PlaceholderPage';
+import { NotFoundPage } from '@/features/placeholder/NotFoundPage';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -36,7 +36,6 @@ export const router = createBrowserRouter([
           { path: 'artist/:id', element: <ArtistProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
-          // Teammate-owned sections (stubs for now)
           { path: 'albums', element: <AlbumsPage /> },
           { path: 'albums/:id', element: <AlbumDetailPage /> },
           { path: 'player', element: <PlayerPage /> },

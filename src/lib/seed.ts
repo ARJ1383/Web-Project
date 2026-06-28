@@ -302,7 +302,7 @@ function song(
   };
 }
 
-// --- Notifications (role-specific, PDF §2.6) --------------------------------
+// --- Notifications (role-specific) ------------------------------------------
 const notifications: AppNotification[] = [
   {
     id: 'ntf_1',

@@ -1,13 +1,7 @@
 import { Music2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-/**
- * Placeholder for the music player (PDF §2.9), which a teammate implements.
- *
- * It reserves a fixed bar at the bottom of every authenticated screen so the
- * real player can be mounted here without changing the surrounding layout.
- * Content areas add bottom padding to clear this bar.
- */
+/** Fixed player bar at the bottom of every authenticated screen (idle state). */
 export function PlayerBarSlot() {
   const { t } = useTranslation();
   return (
@@ -19,8 +13,8 @@ export function PlayerBarSlot() {
         <Music2 size={18} />
       </span>
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-text">{t('app.name')} Player</span>
-        <span className="text-xs text-muted">{t('common.comingSoon')} · §2.9</span>
+        <span className="text-sm font-medium text-text">{t('player.title')}</span>
+        <span className="text-xs text-muted">{t('player.nothingPlaying')}</span>
       </div>
     </div>
   );

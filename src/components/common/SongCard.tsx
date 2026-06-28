@@ -12,10 +12,7 @@ export interface SongCardProps {
   className?: string;
 }
 
-/**
- * Compact, clickable song row. Clicking the artwork/title routes to the music
- * player (section 2.9 — owned by a teammate; currently a stub route).
- */
+/** Compact, clickable song row. Clicking the artwork/title opens the player. */
 export function SongCard({ song, actions, className }: SongCardProps) {
   const navigate = useNavigate();
   return (

@@ -5,9 +5,9 @@ title: 'feat: '
 labels: enhancement
 ---
 
-## Section / area
+## Area
 
-Which part of the spec does this relate to? (e.g. §2.9 Music Player)
+Which part of the app does this relate to? (e.g. Player, Settings)
 
 ## Description
 

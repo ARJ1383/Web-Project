@@ -46,24 +46,18 @@ add a Django backend and wire it in.
 - 📦 **PWA** — installable & offline-capable
 - ✅ **44 tests** (Vitest + Testing Library), ESLint + Prettier + Husky + commitlint + CI
 
-## 🗺️ Feature status (Phase 1)
+## 🧩 Features
 
-Implemented in this repo plus the **shared foundation** (layout, theming, i18n, stores,
-mock data, reusable cards, routing).
-
-| #    | Section (PDF)              | Status         |
-| ---- | -------------------------- | -------------- |
-| 2.1  | Login & Register           | ✅ Implemented |
-| 2.2  | Home                       | ✅ Implemented |
-| 2.3  | User profile + management  | ✅ Implemented |
-| 2.4  | Artist profile             | ✅ Implemented |
-| 2.5  | Settings                   | ✅ Implemented |
-| 2.6  | Notifications              | ✅ Implemented |
-| 2.7  | Playlists                  | ✅ Implemented |
-| 2.8  | Albums & singles           | 🚧             |
-| 2.9  | Music player               | 🚧             |
-| 2.10 | Works management (artists) | 🚧             |
-| 2.11 | Support / admin dashboard  | 🚧             |
+- **Authentication** — login and registration for listeners and artists, with form
+  validation and a privacy-policy flow.
+- **Home** — personalized showcase of playlists, latest releases and popular songs.
+- **Profiles** — user profiles with follow/unfollow and inline editing, plus rich artist
+  profiles with discography and verification badge.
+- **Playlists** — create, rename, delete, and manage tracks, with tier-based limits.
+- **Notifications** — role-aware, read/unread states, mark-as-read and empty states.
+- **Settings** — theme, language, audio, notifications, subscription and account controls.
+- **Theming & i18n** — dark/light themes and bilingual FA/EN with full RTL/LTR support.
+- **PWA** — installable and offline-capable.
 
 ## 🚀 Getting started
 
@@ -114,7 +108,7 @@ Vitest + Testing Library · vite-plugin-pwa.
 src/
   app/          router + root component
   components/   ui/ (primitives) · common/ (shared widgets) · layout/ (app shell)
-  features/     auth · home · profile · artist · settings · notifications · playlists · _stubs
+  features/     auth · home · profile · artist · settings · notifications · playlists
   stores/       Zustand stores (auth, catalog, playlists, notifications, theme, language, toast)
   lib/          storage, seed, subscription rules, formatting, route guards
   i18n/         i18next config + fa/en locales

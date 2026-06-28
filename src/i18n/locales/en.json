@@ -14,7 +14,7 @@
     "yes": "Yes",
     "no": "No",
     "optional": "optional",
-    "comingSoon": "Coming soon",
+    "noContent": "Nothing to show here.",
     "view": "View"
   },
   "nav": {
@@ -144,11 +144,7 @@
     "noExpiry": "No expiry"
   },
   "card": { "song": "Song", "album": "Album", "playlist": "Playlist", "by": "by" },
-  "stub": {
-    "title": "{{section}} — coming soon",
-    "body": "This section is owned by a teammate and will be implemented separately.",
-    "owner": "Owner"
-  },
+  "player": { "title": "Player", "nothingPlaying": "Nothing playing" },
   "validation": {
     "required": "This field is required.",
     "email": "Enter a valid email address.",
