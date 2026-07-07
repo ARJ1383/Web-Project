@@ -10,9 +10,9 @@ import { SettingsPage } from '@/features/settings/SettingsPage';
 import { NotificationsPage } from '@/features/notifications/NotificationsPage';
 import { PlaylistsPage } from '@/features/playlists/PlaylistsPage';
 import { PlaylistDetailPage } from '@/features/playlists/PlaylistDetailPage';
+import { AlbumsPage } from '@/features/albums/AlbumsPage';
+import { AlbumDetailPage } from '@/features/albums/AlbumDetailPage';
 import {
-  AlbumsPage,
-  AlbumDetailPage,
   PlayerPage,
   ArtistStudioPage,
   DashboardPage,
