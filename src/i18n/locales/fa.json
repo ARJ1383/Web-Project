@@ -1,5 +1,8 @@
 {
-  "app": { "name": "Trimir", "tagline": "بدون محدودیت گوش بده" },
+  "app": {
+    "name": "Trimir",
+    "tagline": "بدون محدودیت گوش بده"
+  },
   "common": {
     "save": "ذخیره",
     "cancel": "انصراف",
@@ -143,8 +146,30 @@
     "expires": "انقضا {{date}}",
     "noExpiry": "بدون انقضا"
   },
-  "card": { "song": "آهنگ", "album": "آلبوم", "playlist": "پلی‌لیست", "by": "از" },
-  "player": { "title": "پخش‌کننده", "nothingPlaying": "چیزی در حال پخش نیست" },
+  "card": {
+    "song": "آهنگ",
+    "album": "آلبوم",
+    "playlist": "پلی‌لیست",
+    "by": "از"
+  },
+  "player": {
+    "title": "پخش‌کننده",
+    "nothingPlaying": "چیزی در حال پخش نیست",
+    "nowPlaying": "در حال پخش",
+    "queue": "صف پخش",
+    "play": "پخش",
+    "pause": "توقف",
+    "shuffle": "پخش تصادفی",
+    "repeat": "تکرار",
+    "browseLibrary": "رفتن به آرشیو",
+    "progress": "میزان پیشرفت",
+    "noQueue": "صف پخش خالی است.",
+    "repeatModes": {
+      "off": "بدون تکرار",
+      "all": "تکرار کل",
+      "one": "تکرار تک‌آهنگ"
+    }
+  },
   "validation": {
     "required": "این فیلد الزامی است.",
     "email": "یک ایمیل معتبر وارد کنید.",
@@ -155,5 +180,36 @@
     "acceptPrivacy": "باید سیاست حریم خصوصی را بپذیرید.",
     "url": "یک لینک معتبر وارد کنید."
   },
-  "errors": { "notFound": "صفحه پیدا نشد", "goHome": "بازگشت به خانه" }
+  "errors": {
+    "notFound": "صفحه پیدا نشد",
+    "goHome": "بازگشت به خانه"
+  },
+  "albums": {
+    "title": "آلبوم‌ها و تک‌آهنگ‌ها",
+    "subtitle": "جست‌وجو، فیلتر و مرتب‌سازی آرشیو موسیقی",
+    "searchPlaceholder": "جست‌وجو بر اساس نام اثر یا هنرمند",
+    "viewAll": "همه",
+    "albumsOnly": "فقط آلبوم‌ها",
+    "singlesOnly": "فقط تک‌آهنگ‌ها",
+    "sortLatest": "جدیدترین",
+    "sortListeners": "بیشترین شنونده",
+    "sortTitle": "عنوان",
+    "albumsSection": "آلبوم‌ها",
+    "singlesSection": "تک‌آهنگ‌ها",
+    "noResults": "نتیجه‌ای برای این جست‌وجو پیدا نشد.",
+    "noAlbums": "آلبومی برای نمایش وجود ندارد.",
+    "noSingles": "تک‌آهنگی برای نمایش وجود ندارد.",
+    "songs": "آهنگ‌ها",
+    "noSongs": "آهنگی برای این آلبوم پیدا نشد.",
+    "typeAlbum": "آلبوم",
+    "typeSingle": "تک‌آهنگ",
+    "releaseYear": "سال انتشار {{year}}",
+    "moreFromArtist": "بیشتر از {{name}}",
+    "addToPlaylist": "افزودن به پلی‌لیست",
+    "removeFromPlaylist": "حذف از پلی‌لیست",
+    "playlistsTitle": "پلی‌لیست‌های شما",
+    "playlistsForSong": "افزودن «{{title}}» به پلی‌لیست",
+    "noPlaylists": "هنوز پلی‌لیستی ندارید.",
+    "noPlaylistsDescription": "برای اضافه کردن آهنگ، ابتدا یک پلی‌لیست بسازید."
+  }
 }

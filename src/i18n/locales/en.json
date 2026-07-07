@@ -1,5 +1,8 @@
 {
-  "app": { "name": "Trimir", "tagline": "Listen without limits" },
+  "app": {
+    "name": "Trimir",
+    "tagline": "Listen without limits"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -143,8 +146,30 @@
     "expires": "Expires {{date}}",
     "noExpiry": "No expiry"
   },
-  "card": { "song": "Song", "album": "Album", "playlist": "Playlist", "by": "by" },
-  "player": { "title": "Player", "nothingPlaying": "Nothing playing" },
+  "card": {
+    "song": "Song",
+    "album": "Album",
+    "playlist": "Playlist",
+    "by": "by"
+  },
+  "player": {
+    "title": "Player",
+    "nothingPlaying": "Nothing is playing",
+    "nowPlaying": "Now playing",
+    "queue": "Queue",
+    "play": "Play",
+    "pause": "Pause",
+    "shuffle": "Shuffle",
+    "repeat": "Repeat",
+    "browseLibrary": "Browse library",
+    "progress": "Progress",
+    "noQueue": "The queue is empty.",
+    "repeatModes": {
+      "off": "Off",
+      "all": "Repeat all",
+      "one": "Repeat one"
+    }
+  },
   "validation": {
     "required": "This field is required.",
     "email": "Enter a valid email address.",
@@ -155,5 +180,36 @@
     "acceptPrivacy": "You must accept the privacy policy.",
     "url": "Enter a valid URL."
   },
-  "errors": { "notFound": "Page not found", "goHome": "Go home" }
+  "errors": {
+    "notFound": "Page not found",
+    "goHome": "Go home"
+  },
+  "albums": {
+    "title": "Albums & Singles",
+    "subtitle": "Search, filter, and sort the music catalog.",
+    "searchPlaceholder": "Search by title or artist",
+    "viewAll": "All",
+    "albumsOnly": "Albums only",
+    "singlesOnly": "Singles only",
+    "sortLatest": "Latest",
+    "sortListeners": "Most listeners",
+    "sortTitle": "Title",
+    "albumsSection": "Albums",
+    "singlesSection": "Singles",
+    "noResults": "No results match your search.",
+    "noAlbums": "No albums to show.",
+    "noSingles": "No singles to show.",
+    "songs": "Songs",
+    "noSongs": "No songs were found in this album.",
+    "typeAlbum": "Album",
+    "typeSingle": "Single",
+    "releaseYear": "Release year {{year}}",
+    "moreFromArtist": "More from {{name}}",
+    "addToPlaylist": "Add to playlist",
+    "removeFromPlaylist": "Remove from playlist",
+    "playlistsTitle": "Your playlists",
+    "playlistsForSong": "Add “{{title}}” to playlist",
+    "noPlaylists": "You do not have any playlists yet.",
+    "noPlaylistsDescription": "Create a playlist first to save songs."
+  }
 }

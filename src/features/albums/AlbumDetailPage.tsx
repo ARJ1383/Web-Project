@@ -1,9 +1,14 @@
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AlbumCard } from '@/components/common/AlbumCard';
 import { SongCard } from '@/components/common/SongCard';
+import { SongPlaylistMenu } from '@/components/common/SongPlaylistMenu';
+import { Button, EmptyState } from '@/components/ui';
 import { useCatalogStore } from '@/stores/catalogStore';
+import { formatCount } from '@/lib/format';
 
 export function AlbumDetailPage() {
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
 
   const getAlbumById = useCatalogStore((state) => state.getAlbumById);
@@ -22,50 +27,75 @@ export function AlbumDetailPage() {
 
   const otherAlbums = getAlbumsByArtist(album.artistId).filter((a) => a.id !== album.id);
 
+  const totalListeners = songs.reduce((sum, song) => sum + song.listeners, 0);
+  const totalStreams = songs.reduce((sum, song) => sum + song.streams, 0);
+  const locale = i18n.language === 'fa' ? 'fa' : 'en';
+
   return (
     <div className="space-y-10">
-      {/* Header */}
-      <section className="flex flex-col gap-6 md:flex-row">
+      <section className="card-surface flex flex-col gap-6 md:flex-row">
         <img
           src={album.coverUrl}
           alt={album.title}
           className="h-64 w-64 rounded-2xl object-cover shadow-lg"
         />
 
-        <div className="flex flex-col justify-end">
-          <p className="text-sm uppercase tracking-wide text-muted">{album.releaseType}</p>
+        <div className="flex flex-1 flex-col justify-end">
+          <p className="text-sm uppercase tracking-wide text-muted">
+            {album.releaseType === 'album' ? t('albums.typeAlbum') : t('albums.typeSingle')}
+          </p>
 
           <h1 className="mt-2 text-5xl font-bold text-text">{album.title}</h1>
 
-          <p className="mt-3 text-lg text-muted">{album.artistName}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Link to={`/artist/${album.artistId}`}>
+              <Button variant="secondary" size="sm">
+                {album.artistName}
+              </Button>
+            </Link>
 
-          <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted">
-            {album.releaseYear && <span>{album.releaseYear}</span>}
+            {album.releaseYear && (
+              <span className="text-sm text-muted">
+                {t('albums.releaseYear', { year: album.releaseYear })}
+              </span>
+            )}
 
-            {album.genre && <span>{album.genre}</span>}
+            {album.genre && <span className="text-sm text-muted">{album.genre}</span>}
+          </div>
 
+          <div className="mt-4 flex flex-wrap gap-3 text-sm text-muted">
             <span>
-              {songs.length} song{songs.length !== 1 ? 's' : ''}
+              {songs.length} {t('albums.songs')}
+            </span>
+            <span>
+              {formatCount(totalListeners, locale)} {t('artist.listeners')}
+            </span>
+            <span>
+              {formatCount(totalStreams, locale)} {t('artist.streams')}
             </span>
           </div>
         </div>
       </section>
 
-      {/* Songs */}
-      <section>
-        <h2 className="mb-4 text-2xl font-semibold text-text">Songs</h2>
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold text-text">{t('albums.songs')}</h2>
 
-        <div className="space-y-2">
-          {songs.map((song) => (
-            <SongCard key={song.id} song={song} />
-          ))}
-        </div>
+        {songs.length > 0 ? (
+          <div className="space-y-3">
+            {songs.map((song) => (
+              <SongCard key={song.id} song={song} actions={<SongPlaylistMenu songId={song.id} />} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState title={t('albums.noSongs')} description={t('albums.subtitle')} />
+        )}
       </section>
 
-      {/* More albums */}
       {otherAlbums.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-2xl font-semibold text-text">More from {album.artistName}</h2>
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-text">
+            {t('albums.moreFromArtist', { name: album.artistName })}
+          </h2>
 
           <div className="flex gap-5 overflow-x-auto pb-2">
             {otherAlbums.map((otherAlbum) => (

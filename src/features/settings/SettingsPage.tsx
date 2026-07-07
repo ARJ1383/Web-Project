@@ -49,6 +49,7 @@ export function SettingsPage() {
   const { theme, setTheme } = useThemeStore();
   const { language, setLanguage } = useLanguageStore();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   if (!user) return null;
 
@@ -125,7 +126,7 @@ export function SettingsPage() {
           <SubscriptionBadge tier={user.subscription.tier} />
         </Row>
         <div className="flex flex-col gap-1">
-          <Button variant="secondary" onClick={() => navigate('/player')} className="self-start">
+          <Button variant="secondary" onClick={() => setUpgradeOpen(true)} className="self-start">
             {t('settings.upgrade')}
             <ChevronLeft size={16} className="rtl:rotate-180" />
           </Button>
@@ -139,6 +140,19 @@ export function SettingsPage() {
           {t('settings.deleteAccount')}
         </Button>
       </Section>
+
+      <Modal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        title={t('settings.upgrade')}
+        footer={
+          <Button variant="secondary" onClick={() => setUpgradeOpen(false)}>
+            {t('common.close')}
+          </Button>
+        }
+      >
+        <p className="text-sm text-muted">{t('settings.upgradeHint')}</p>
+      </Modal>
 
       <Modal
         open={confirmOpen}
