@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button, Input } from '@/components/ui';
+import { useCurrentUser } from '@/stores/authStore';
+import { usePlaylistStore } from '@/stores/playlistStore';
+import { canCreatePlaylist } from '@/lib/subscription';
 
 export function CreatePlaylistModal({
   open,
@@ -12,10 +15,18 @@ export function CreatePlaylistModal({
   onCreate: (name: string) => void;
 }) {
   const { t } = useTranslation();
+
   const [name, setName] = useState('');
 
+  const user = useCurrentUser();
+
+  const playlists = usePlaylistStore((state) => (user ? state.getByOwner(user.id) : []));
+
+  const canCreate = !!user && canCreatePlaylist(user.subscription.tier, playlists.length);
+
   const submit = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !canCreate) return;
+
     onCreate(name.trim());
     setName('');
     onClose();
@@ -31,7 +42,8 @@ export function CreatePlaylistModal({
           <Button variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={submit} disabled={!name.trim()}>
+
+          <Button onClick={submit} disabled={!name.trim() || !canCreate}>
             {t('common.create')}
           </Button>
         </>
