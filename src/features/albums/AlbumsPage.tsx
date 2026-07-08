@@ -21,6 +21,7 @@ function songScore(song: Song): number {
 
 export function AlbumsPage() {
   const { t } = useTranslation();
+
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ViewMode>('all');
   const [sort, setSort] = useState<SortMode>('latest');
@@ -29,6 +30,7 @@ export function AlbumsPage() {
   const songs = useCatalogStore((state) => state.songs);
 
   const songsById = useMemo(() => new Map(songs.map((song) => [song.id, song] as const)), [songs]);
+
   const normalizedQuery = query.trim().toLowerCase();
 
   const compareByTitle = (a: { title: string }, b: { title: string }) =>
@@ -40,6 +42,7 @@ export function AlbumsPage() {
   const filteredAlbums = useMemo(() => {
     const list = albums.filter((album) => {
       if (!normalizedQuery) return true;
+
       return (
         album.title.toLowerCase().includes(normalizedQuery) ||
         album.artistName.toLowerCase().includes(normalizedQuery)
@@ -48,24 +51,35 @@ export function AlbumsPage() {
 
     return [...list].sort((a, b) => {
       if (sort === 'title') return compareByTitle(a, b);
-      if (sort === 'listeners') return albumScore(b, songsById) - albumScore(a, songsById);
+
+      if (sort === 'listeners') {
+        return albumScore(b, songsById) - albumScore(a, songsById);
+      }
+
       return compareLatest(a, b);
     });
   }, [albums, normalizedQuery, songsById, sort]);
 
   const singles = useMemo(() => {
-    const list = songs.filter(
-      (song) =>
-        song.albumId === null &&
-        (!normalizedQuery ||
-          song.title.toLowerCase().includes(normalizedQuery) ||
-          song.artistName.toLowerCase().includes(normalizedQuery) ||
-          (song.albumTitle?.toLowerCase().includes(normalizedQuery) ?? false)),
-    );
+    const list = songs.filter((song) => {
+      if (song.albumId !== null) return false;
+
+      if (!normalizedQuery) return true;
+
+      return (
+        song.title.toLowerCase().includes(normalizedQuery) ||
+        song.artistName.toLowerCase().includes(normalizedQuery) ||
+        (song.albumTitle?.toLowerCase().includes(normalizedQuery) ?? false)
+      );
+    });
 
     return [...list].sort((a, b) => {
       if (sort === 'title') return compareByTitle(a, b);
-      if (sort === 'listeners') return songScore(b) - songScore(a);
+
+      if (sort === 'listeners') {
+        return songScore(b) - songScore(a);
+      }
+
       return compareLatest(a, b);
     });
   }, [songs, normalizedQuery, sort]);
@@ -77,7 +91,9 @@ export function AlbumsPage() {
     <div className="space-y-6">
       <header className="space-y-2">
         <p className="text-sm uppercase tracking-wide text-muted">{t('nav.albums')}</p>
+
         <h1 className="text-3xl font-bold text-text">{t('albums.title')}</h1>
+
         <p className="max-w-2xl text-sm text-muted">{t('albums.subtitle')}</p>
       </header>
 
@@ -119,6 +135,7 @@ export function AlbumsPage() {
           >
             {t('albums.viewAll')}
           </Button>
+
           <Button
             variant={view === 'albums' ? 'primary' : 'secondary'}
             size="sm"
@@ -126,6 +143,7 @@ export function AlbumsPage() {
           >
             {t('albums.albumsOnly')}
           </Button>
+
           <Button
             variant={view === 'singles' ? 'primary' : 'secondary'}
             size="sm"
@@ -140,6 +158,7 @@ export function AlbumsPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold text-text">{t('albums.albumsSection')}</h2>
+
             <span className="text-sm text-muted">{filteredAlbums.length}</span>
           </div>
 
@@ -163,6 +182,7 @@ export function AlbumsPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold text-text">{t('albums.singlesSection')}</h2>
+
             <span className="text-sm text-muted">{singles.length}</span>
           </div>
 

@@ -7,16 +7,16 @@ import { cn } from '@/lib/cn';
 
 export interface SongCardProps {
   song: Song;
-  /** Optional trailing controls (e.g. add-to-playlist menu). */
   actions?: ReactNode;
   className?: string;
 }
 
 /**
- * Compact song card used across the app.
+ * Compact song card.
  *
- * The artwork/title open the mock player, while the optional actions slot can
- * host playlist menus or remove buttons.
+ * - Artwork/title -> player
+ * - Artist name -> artist page
+ * - Album name -> album page
  */
 export function SongCard({ song, actions, className }: SongCardProps) {
   const navigate = useNavigate();
@@ -40,6 +40,7 @@ export function SongCard({ song, actions, className }: SongCardProps) {
           className="h-14 w-14 rounded-xl object-cover"
           loading="lazy"
         />
+
         <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
           <Play size={18} className="text-white" fill="currentColor" />
         </span>
@@ -59,9 +60,10 @@ export function SongCard({ song, actions, className }: SongCardProps) {
             {song.artistName}
           </Link>
 
-          {song.albumTitle && song.albumId && (
+          {song.albumId && song.albumTitle && (
             <>
               <span aria-hidden="true">•</span>
+
               <Link to={`/albums/${song.albumId}`} className="truncate hover:text-accent">
                 {song.albumTitle}
               </Link>
