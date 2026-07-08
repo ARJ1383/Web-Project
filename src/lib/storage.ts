@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   language: 'trimir:language',
   playlists: 'trimir:playlists',
   notifications: 'trimir:notifications',
+  dashboard: 'trimir:dashboard',
 } as const;
 
 export function readJSON<T>(key: string, fallback: T): T {

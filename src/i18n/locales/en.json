@@ -154,21 +154,7 @@
   },
   "player": {
     "title": "Player",
-    "nothingPlaying": "Nothing is playing",
-    "nowPlaying": "Now playing",
-    "queue": "Queue",
-    "play": "Play",
-    "pause": "Pause",
-    "shuffle": "Shuffle",
-    "repeat": "Repeat",
-    "browseLibrary": "Browse library",
-    "progress": "Progress",
-    "noQueue": "The queue is empty.",
-    "repeatModes": {
-      "off": "Off",
-      "all": "Repeat all",
-      "one": "Repeat one"
-    }
+    "nothingPlaying": "Nothing playing"
   },
   "validation": {
     "required": "This field is required.",
@@ -184,32 +170,133 @@
     "notFound": "Page not found",
     "goHome": "Go home"
   },
-  "albums": {
-    "title": "Albums & Singles",
-    "subtitle": "Search, filter, and sort the music catalog.",
-    "searchPlaceholder": "Search by title or artist",
-    "viewAll": "All",
-    "albumsOnly": "Albums only",
-    "singlesOnly": "Singles only",
-    "sortLatest": "Latest",
-    "sortListeners": "Most listeners",
-    "sortTitle": "Title",
-    "albumsSection": "Albums",
-    "singlesSection": "Singles",
-    "noResults": "No results match your search.",
-    "noAlbums": "No albums to show.",
-    "noSingles": "No singles to show.",
-    "songs": "Songs",
-    "noSongs": "No songs were found in this album.",
-    "typeAlbum": "Album",
-    "typeSingle": "Single",
-    "releaseYear": "Release year {{year}}",
-    "moreFromArtist": "More from {{name}}",
-    "addToPlaylist": "Add to playlist",
-    "removeFromPlaylist": "Remove from playlist",
-    "playlistsTitle": "Your playlists",
-    "playlistsForSong": "Add “{{title}}” to playlist",
-    "noPlaylists": "You do not have any playlists yet.",
-    "noPlaylistsDescription": "Create a playlist first to save songs."
+  "dashboard": {
+    "title": "Support & Admin Dashboard",
+    "subtitle": "Review artist verification requests, support tickets, monthly audits, and subscription pricing.",
+    "roles": {
+      "support": "Support",
+      "admin": "Admin"
+    },
+    "tabs": {
+      "verification": "Artist verification",
+      "tickets": "Tickets",
+      "audit": "Audit",
+      "pricing": "Pricing"
+    },
+    "stats": {
+      "pendingArtists": "Pending requests",
+      "pendingArtistsHint": "Artists not reviewed yet",
+      "openTickets": "Open tickets",
+      "openTicketsHint": "Tickets that are not closed",
+      "pendingPayout": "Unsettled payout",
+      "pendingPayoutHint": "Reward total waiting for payment",
+      "monthlyRevenue": "Monthly subscription revenue",
+      "monthlyRevenueHint": "Based on active paid subscriptions"
+    },
+    "access": {
+      "supportOnlyTitle": "Only support and admin can access this area.",
+      "supportOnlyDescription": "Your account does not have access to every dashboard section."
+    },
+    "verification": {
+      "title": "Artist approval requests",
+      "description": "Review pending artist applications and record an outcome.",
+      "empty": "No artist requests are waiting.",
+      "emptyDescription": "All current requests have already been reviewed.",
+      "table": {
+        "artist": "Artist",
+        "email": "Email",
+        "submitted": "Submitted",
+        "actions": "Actions"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "view": "View",
+      "detailsTitle": "Artist request details",
+      "submitted": "Submitted on",
+      "openPortfolio": "Open portfolio",
+      "bio": "Bio",
+      "noBio": "No bio has been provided.",
+      "rejectReason": "Reject reason / note",
+      "rejectReasonPlaceholder": "Write a reason if you reject the request. If left empty, a default note will be used.",
+      "followers": "Followers",
+      "listeners": "Listeners",
+      "streams": "Streams",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approvedNote": "Your artist account has been approved.",
+      "rejectedNote": "Your request was rejected.",
+      "approvedToast": "Request approved.",
+      "rejectedToast": "Request rejected.",
+      "approvedToastTitle": "Artist account approved",
+      "approvedToastBody": "Your artist account has been approved by support.",
+      "rejectedToastTitle": "Artist account rejected"
+    },
+    "ticket": {
+      "title": "Support tickets",
+      "description": "Reply to listener questions and manage ticket status.",
+      "empty": "No tickets to show.",
+      "emptyDescription": "Users have not opened any tickets yet.",
+      "table": {
+        "subject": "Subject",
+        "user": "User",
+        "created": "Created",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "open": "Open",
+        "replied": "Replied",
+        "closed": "Closed"
+      },
+      "messagesCount": "{{count}} message(s)",
+      "openThread": "Open",
+      "threadTitle": "Ticket thread",
+      "replyLabel": "Support reply",
+      "replyPlaceholder": "Write your reply…",
+      "reply": "Send reply",
+      "replySent": "Reply saved.",
+      "close": "Close ticket",
+      "closedToast": "Ticket closed."
+    },
+    "audit": {
+      "title": "Audit and settlements",
+      "description": "Monthly artist payouts and payment confirmation.",
+      "empty": "No audit records available.",
+      "emptyDescription": "There is no current month data yet.",
+      "table": {
+        "artist": "Artist",
+        "uniqueListeners": "Unique listeners",
+        "monthlyStreams": "Monthly streams",
+        "reward": "Reward",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "pending": "Pending payment",
+        "settled": "Settled"
+      },
+      "settle": "Mark settled",
+      "settled": "Settled",
+      "settledToast": "Settlement confirmed."
+    },
+    "pricing": {
+      "title": "Subscription pricing",
+      "description": "Update Silver and Gold prices without changing code.",
+      "silverMonthly": "Silver monthly price",
+      "goldMonthly": "Gold monthly price",
+      "save": "Save prices",
+      "saveHint": "Changes are only stored in this browser.",
+      "saved": "Prices saved.",
+      "chartTitle": "Subscription distribution",
+      "chartDescription": "Pie chart showing how users are split across tiers.",
+      "totalAccounts": "Total accounts",
+      "basic": "Basic",
+      "silver": "Silver",
+      "gold": "Gold",
+      "monthlyRevenue": "Monthly revenue"
+    }
   }
 }

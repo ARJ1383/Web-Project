@@ -12,11 +12,8 @@ import { PlaylistsPage } from '@/features/playlists/PlaylistsPage';
 import { PlaylistDetailPage } from '@/features/playlists/PlaylistDetailPage';
 import { AlbumsPage } from '@/features/albums/AlbumsPage';
 import { AlbumDetailPage } from '@/features/albums/AlbumDetailPage';
-import {
-  PlayerPage,
-  ArtistStudioPage,
-  DashboardPage,
-} from '@/features/placeholder/PlaceholderPage';
+import { PlayerPage, ArtistStudioPage } from '@/features/placeholder/PlaceholderPage';
+import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { NotFoundPage } from '@/features/placeholder/NotFoundPage';
 
 export const router = createBrowserRouter([

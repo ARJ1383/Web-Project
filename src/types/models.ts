@@ -107,6 +107,47 @@ export interface Playlist {
   updatedAt: string;
 }
 
+export type TicketStatus = 'open' | 'replied' | 'closed';
+
+export interface SupportTicketMessage {
+  id: string;
+  senderRole: 'user' | 'support';
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  userName: string;
+  subject: string;
+  status: TicketStatus;
+  createdAt: string;
+  updatedAt: string;
+  messages: SupportTicketMessage[];
+}
+
+export type AuditStatus = 'pending' | 'settled';
+
+export interface AuditRecord {
+  id: string;
+  artistId: string;
+  artistName: string;
+  uniqueListeners: number;
+  monthlyStreams: number;
+  rewardAmount: number;
+  status: AuditStatus;
+  monthLabel: string;
+  settledAt: string | null;
+}
+
+export interface PricingSettings {
+  silverMonthly: number;
+  goldMonthly: number;
+  currency: string;
+}
+
 export type NotificationType =
   | 'subscription_expiry'
   | 'new_release'

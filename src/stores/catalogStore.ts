@@ -25,6 +25,7 @@ interface CatalogState {
   addUser: (user: User) => void;
   addArtist: (artist: Artist) => void;
   updateUser: (id: string, patch: Partial<User>) => void;
+  updateArtist: (id: string, patch: Partial<Artist>) => void;
   removeUser: (id: string) => void;
   toggleFollow: (currentUserId: string, targetId: string) => void;
 }
@@ -66,6 +67,11 @@ export const useCatalogStore = create<CatalogState>()(
         set((s) => ({
           users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
           artists: s.artists.map((a) => (a.id === id ? ({ ...a, ...patch } as Artist) : a)),
+        })),
+      updateArtist: (id, patch) =>
+        set((s) => ({
+          artists: s.artists.map((a) => (a.id === id ? ({ ...a, ...patch } as Artist) : a)),
+          users: s.users.map((u) => (u.id === id ? ({ ...u, ...patch } as User) : u)),
         })),
       removeUser: (id) =>
         set((s) => ({

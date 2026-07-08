@@ -154,21 +154,7 @@
   },
   "player": {
     "title": "پخش‌کننده",
-    "nothingPlaying": "چیزی در حال پخش نیست",
-    "nowPlaying": "در حال پخش",
-    "queue": "صف پخش",
-    "play": "پخش",
-    "pause": "توقف",
-    "shuffle": "پخش تصادفی",
-    "repeat": "تکرار",
-    "browseLibrary": "رفتن به آرشیو",
-    "progress": "میزان پیشرفت",
-    "noQueue": "صف پخش خالی است.",
-    "repeatModes": {
-      "off": "بدون تکرار",
-      "all": "تکرار کل",
-      "one": "تکرار تک‌آهنگ"
-    }
+    "nothingPlaying": "چیزی در حال پخش نیست"
   },
   "validation": {
     "required": "این فیلد الزامی است.",
@@ -184,32 +170,133 @@
     "notFound": "صفحه پیدا نشد",
     "goHome": "بازگشت به خانه"
   },
-  "albums": {
-    "title": "آلبوم‌ها و تک‌آهنگ‌ها",
-    "subtitle": "جست‌وجو، فیلتر و مرتب‌سازی آرشیو موسیقی",
-    "searchPlaceholder": "جست‌وجو بر اساس نام اثر یا هنرمند",
-    "viewAll": "همه",
-    "albumsOnly": "فقط آلبوم‌ها",
-    "singlesOnly": "فقط تک‌آهنگ‌ها",
-    "sortLatest": "جدیدترین",
-    "sortListeners": "بیشترین شنونده",
-    "sortTitle": "عنوان",
-    "albumsSection": "آلبوم‌ها",
-    "singlesSection": "تک‌آهنگ‌ها",
-    "noResults": "نتیجه‌ای برای این جست‌وجو پیدا نشد.",
-    "noAlbums": "آلبومی برای نمایش وجود ندارد.",
-    "noSingles": "تک‌آهنگی برای نمایش وجود ندارد.",
-    "songs": "آهنگ‌ها",
-    "noSongs": "آهنگی برای این آلبوم پیدا نشد.",
-    "typeAlbum": "آلبوم",
-    "typeSingle": "تک‌آهنگ",
-    "releaseYear": "سال انتشار {{year}}",
-    "moreFromArtist": "بیشتر از {{name}}",
-    "addToPlaylist": "افزودن به پلی‌لیست",
-    "removeFromPlaylist": "حذف از پلی‌لیست",
-    "playlistsTitle": "پلی‌لیست‌های شما",
-    "playlistsForSong": "افزودن «{{title}}» به پلی‌لیست",
-    "noPlaylists": "هنوز پلی‌لیستی ندارید.",
-    "noPlaylistsDescription": "برای اضافه کردن آهنگ، ابتدا یک پلی‌لیست بسازید."
+  "dashboard": {
+    "title": "داشبورد پشتیبان و مدیر",
+    "subtitle": "بررسی درخواست‌های هنرمندان، تیکت‌های کاربران، حسابرسی ماهانه و تنظیم قیمت اشتراک‌ها.",
+    "roles": {
+      "support": "پشتیبان",
+      "admin": "مدیر سامانه"
+    },
+    "tabs": {
+      "verification": "احراز هویت هنرمندان",
+      "tickets": "تیکت‌ها",
+      "audit": "حسابرسی",
+      "pricing": "قیمت‌ها"
+    },
+    "stats": {
+      "pendingArtists": "درخواست‌های در انتظار",
+      "pendingArtistsHint": "هنرمندانی که هنوز تایید نشده‌اند",
+      "openTickets": "تیکت‌های باز",
+      "openTicketsHint": "تیکت‌هایی که هنوز بسته نشده‌اند",
+      "pendingPayout": "مبلغ تسویه‌نشده",
+      "pendingPayoutHint": "جمع پاداش‌های در انتظار پرداخت",
+      "monthlyRevenue": "درآمد اشتراک ماهانه",
+      "monthlyRevenueHint": "براساس تعداد اشتراک‌های فعال"
+    },
+    "access": {
+      "supportOnlyTitle": "فقط پشتیبان و مدیر به این بخش دسترسی دارند.",
+      "supportOnlyDescription": "حساب شما مجاز به مشاهده همه بخش‌های داشبورد نیست."
+    },
+    "verification": {
+      "title": "درخواست‌های تایید هنرمند",
+      "description": "هنرمندهای در انتظار تایید را بررسی کنید و برایشان نتیجه ثبت کنید.",
+      "empty": "درخواست هنرمندِ در انتظار وجود ندارد.",
+      "emptyDescription": "همه درخواست‌های فعلی بررسی شده‌اند.",
+      "table": {
+        "artist": "هنرمند",
+        "email": "ایمیل",
+        "submitted": "زمان ارسال",
+        "actions": "عملیات"
+      },
+      "status": {
+        "pending": "در انتظار",
+        "approved": "تایید شده",
+        "rejected": "رد شده"
+      },
+      "view": "مشاهده",
+      "detailsTitle": "جزئیات درخواست هنرمند",
+      "submitted": "تاریخ ثبت",
+      "openPortfolio": "باز کردن نمونه‌کار",
+      "bio": "بیوگرافی",
+      "noBio": "بیوگرافی ثبت نشده است.",
+      "rejectReason": "دلیل رد / یادداشت",
+      "rejectReasonPlaceholder": "در صورت رد، دلیل را بنویسید. اگر خالی بماند، یادداشت پیش‌فرض ثبت می‌شود.",
+      "followers": "دنبال‌کنندگان",
+      "listeners": "شنوندگان",
+      "streams": "استریم‌ها",
+      "approve": "تایید",
+      "reject": "رد",
+      "approvedNote": "حساب هنری شما تایید شد.",
+      "rejectedNote": "درخواست شما رد شد.",
+      "approvedToast": "درخواست تایید شد.",
+      "rejectedToast": "درخواست رد شد.",
+      "approvedToastTitle": "حساب هنری تایید شد",
+      "approvedToastBody": "اکانت هنری شما توسط تیم پشتیبانی تایید شد.",
+      "rejectedToastTitle": "حساب هنری رد شد"
+    },
+    "ticket": {
+      "title": "تیکت‌های پشتیبانی",
+      "description": "پاسخ‌گویی به کاربران عادی و مدیریت وضعیت تیکت‌ها.",
+      "empty": "تیکتی برای نمایش وجود ندارد.",
+      "emptyDescription": "کاربران هنوز درخواستی ثبت نکرده‌اند.",
+      "table": {
+        "subject": "موضوع",
+        "user": "کاربر",
+        "created": "ایجاد شده",
+        "status": "وضعیت",
+        "actions": "عملیات"
+      },
+      "status": {
+        "open": "باز",
+        "replied": "پاسخ داده شده",
+        "closed": "بسته شده"
+      },
+      "messagesCount": "{{count}} پیام",
+      "openThread": "باز کردن",
+      "threadTitle": "گفت‌وگوی تیکت",
+      "replyLabel": "پاسخ پشتیبان",
+      "replyPlaceholder": "پاسخ خود را بنویسید…",
+      "reply": "ارسال پاسخ",
+      "replySent": "پاسخ ثبت شد.",
+      "close": "بستن تیکت",
+      "closedToast": "تیکت بسته شد."
+    },
+    "audit": {
+      "title": "حسابرسی و پرداخت‌ها",
+      "description": "محاسبات مالی ماهانه هنرمندان و تایید تسویه حساب.",
+      "empty": "رکوردی برای حسابرسی وجود ندارد.",
+      "emptyDescription": "هنوز داده‌ای برای ماه جاری ثبت نشده است.",
+      "table": {
+        "artist": "هنرمند",
+        "uniqueListeners": "شنوندگان منحصربه‌فرد",
+        "monthlyStreams": "استریم ماهانه",
+        "reward": "پاداش",
+        "status": "وضعیت",
+        "actions": "عملیات"
+      },
+      "status": {
+        "pending": "در انتظار پرداخت",
+        "settled": "تسویه شده"
+      },
+      "settle": "تایید تسویه",
+      "settled": "تسویه شده",
+      "settledToast": "تسویه حساب ثبت شد."
+    },
+    "pricing": {
+      "title": "تنظیم قیمت اشتراک‌ها",
+      "description": "قیمت اشتراک نقره‌ای و طلایی را بدون تغییر در کد به‌روزرسانی کنید.",
+      "silverMonthly": "قیمت ماهانه نقره‌ای",
+      "goldMonthly": "قیمت ماهانه طلایی",
+      "save": "ذخیره قیمت‌ها",
+      "saveHint": "تغییرات فقط در همین مرورگر ذخیره می‌شوند.",
+      "saved": "قیمت‌ها ذخیره شد.",
+      "chartTitle": "توزیع اشتراک‌ها",
+      "chartDescription": "نمودار دایره‌ای تعداد کاربران در سه سطح اشتراک.",
+      "totalAccounts": "کل حساب‌ها",
+      "basic": "پایه",
+      "silver": "نقره‌ای",
+      "gold": "طلایی",
+      "monthlyRevenue": "درآمد ماهانه"
+    }
   }
 }
