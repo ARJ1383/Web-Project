@@ -28,6 +28,18 @@ interface CatalogState {
   updateArtist: (id: string, patch: Partial<Artist>) => void;
   removeUser: (id: string) => void;
   toggleFollow: (currentUserId: string, targetId: string) => void;
+
+  addSong: (song: Song) => void;
+  updateSong: (id: string, patch: Partial<Song>) => void;
+  deleteSong: (id: string) => void;
+
+  addAlbum: (album: Album) => void;
+  updateAlbum: (id: string, patch: Partial<Album>) => void;
+  deleteAlbum: (id: string) => void;
+
+  addSongToAlbum: (songId: string, albumId: string) => void;
+
+  removeSongFromAlbum: (songId: string, albumId: string) => void;
 }
 
 const seed = buildSeedDatabase();
@@ -104,6 +116,95 @@ export const useCatalogStore = create<CatalogState>()(
             });
           return { users: apply(s.users), artists: apply(s.artists) };
         }),
+
+      addSong: (song) =>
+        set((s) => ({
+          songs: [...s.songs, song],
+        })),
+
+      updateSong: (id, patch) =>
+        set((s) => ({
+          songs: s.songs.map((song) => (song.id === id ? { ...song, ...patch } : song)),
+        })),
+
+      deleteSong: (id) =>
+        set((s) => ({
+          songs: s.songs.filter((song) => song.id !== id),
+        })),
+
+      addAlbum: (album) =>
+        set((s) => ({
+          albums: [...s.albums, album],
+        })),
+
+      updateAlbum: (id, patch) =>
+        set((s) => ({
+          albums: s.albums.map((album) => (album.id === id ? { ...album, ...patch } : album)),
+        })),
+
+      deleteAlbum: (id) =>
+        set((s) => ({
+          albums: s.albums.filter((album) => album.id !== id),
+          songs: s.songs.map((song) =>
+            song.albumId === id
+              ? {
+                  ...song,
+                  albumId: null,
+                  albumTitle: undefined,
+                }
+              : song,
+          ),
+        })),
+
+      addSongToAlbum: (songId, albumId) =>
+        set((s) => {
+          const album = s.albums.find((a) => a.id === albumId);
+
+          if (!album) return s;
+
+          return {
+            songs: s.songs.map((song) =>
+              song.id === songId
+                ? {
+                    ...song,
+                    albumId,
+                    albumTitle: album.title,
+                  }
+                : song,
+            ),
+
+            albums: s.albums.map((a) =>
+              a.id === albumId
+                ? {
+                    ...a,
+                    songIds: [...a.songIds, songId],
+                  }
+                : a,
+            ),
+          };
+        }),
+
+      removeSongFromAlbum: (songId, albumId) =>
+        set((s) => ({
+          songs: s.songs.map((song) =>
+            song.id === songId
+              ? {
+                  ...song,
+                  albumId: null,
+                  albumTitle: undefined,
+                }
+              : song,
+          ),
+
+          albums: s.albums.map((album) =>
+            album.id === albumId
+              ? {
+                  ...album,
+                  songIds: album.songIds.filter((id) => id !== songId),
+                }
+              : album,
+          ),
+        })),
     }),
     {
       name: STORAGE_KEYS.db,

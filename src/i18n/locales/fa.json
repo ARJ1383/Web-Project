@@ -94,6 +94,19 @@
     "streams": "کل استریم‌ها",
     "statsGoldOnly": "آمار تفصیلی برای کاربران طلایی قابل مشاهده است."
   },
+  "albums": {
+    "title": "آلبوم‌ها و تک‌آهنگ‌ها",
+    "subtitle": "آثار منتشر شده توسط هنرمندان",
+    "searchPlaceholder": "جستجو در آلبوم‌ها و آهنگ‌ها...",
+    "viewAll": "مشاهده همه",
+    "sortLatest": "جدیدترین",
+    "albumsOnly": "فقط آلبوم‌ها",
+    "singlesOnly": "فقط تک‌آهنگ‌ها",
+    "sortListeners": "بیشترین شنونده",
+    "sortTitle": "بر اساس عنوان",
+    "albumsSection": "انتخاب آلبوم‌ها",
+    "singlesSection": "انتخاب تک‌آهنگ‌"
+  },
   "settings": {
     "title": "تنظیمات",
     "appearance": "ظاهر",

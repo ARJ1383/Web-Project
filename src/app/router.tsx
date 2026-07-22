@@ -12,10 +12,10 @@ import { PlaylistsPage } from '@/features/playlists/PlaylistsPage';
 import { PlaylistDetailPage } from '@/features/playlists/PlaylistDetailPage';
 import { AlbumsPage } from '@/features/albums/AlbumsPage';
 import { AlbumDetailPage } from '@/features/albums/AlbumDetailPage';
-import { ArtistStudioPage } from '@/features/placeholder/PlaceholderPage';
 import { PlayerPage } from '@/features/player/PlayerPage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { NotFoundPage } from '@/features/placeholder/NotFoundPage';
+import { ArtistStudioPage } from '@/features/studio/ArtistStudioPage';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },

@@ -7,7 +7,7 @@ export function AudioController() {
 
   const songs = useCatalogStore((s) => s.songs);
 
-  const { currentSongId, playing, volume, seek, setDuration, next, pause } = usePlayerStore();
+  const { currentSongId, playing, volume, seek, setDuration, next } = usePlayerStore();
 
   const song = songs.find((s) => s.id === currentSongId);
 
@@ -20,7 +20,7 @@ export function AudioController() {
     if (playing) {
       audioRef.current.play();
     }
-  }, [song]);
+  }, [song, playing]);
 
   useEffect(() => {
     const audio = audioRef.current;

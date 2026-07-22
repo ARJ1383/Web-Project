@@ -82,6 +82,9 @@ export interface Song {
   listeners: number;
   streams: number;
   createdAt: string;
+  audioFile?: string;
+  collaborators?: string[];
+  revenue?: number;
 }
 
 export interface Album {

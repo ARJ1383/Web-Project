@@ -11,7 +11,7 @@ export interface SongCardProps {
   song: Song;
   actions?: ReactNode;
   className?: string;
-  audioUrl: string;
+  audioUrl?: string;
 }
 
 /**

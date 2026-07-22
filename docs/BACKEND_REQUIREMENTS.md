@@ -20,23 +20,36 @@ the Local-Storage mock. The data shapes mirror [`src/types/models.ts`](../src/ty
 - **Notification** — user, type, title, body, read, link, timestamp.
 - (Phase-2 only) **Subscription plan & price**, **Ticket**, **PaymentTransaction**,
   **MonthlyPayout/Audit**.
+- ArtistWork / Track Management — artist-owned songs with audio file, lyrics,
+  cover image, metadata (genre, release year, collaborators), publication status,
+  and statistics.
+- AudioFile — uploaded track files with supported formats (MP3/WAV/FLAC),
+  storage path, duration, and validation information.
 
 ## Endpoints (REST, indicative)
 
-| Area          | Endpoints                                                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Auth          | `POST /auth/register`, `POST /auth/register/artist`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/forgot-password` |
-| Users         | `GET/PATCH /users/me`, `GET /users/:id`, `POST /users/:id/follow`, `DELETE /users/:id/follow`, `DELETE /users/me`          |
-| Artists       | `GET /artists/:id`, `GET /artists/:id/discography`                                                                         |
-| Catalog       | `GET /songs`, `GET /albums`, `GET /search?q=` (search + sort/filter)                                                       |
-| Playlists     | `GET/POST /playlists`, `PATCH/DELETE /playlists/:id`, `POST/DELETE /playlists/:id/songs`                                   |
-| Player        | `GET /songs/:id/stream`, `POST /songs/:id/play`, `GET /songs/:id/lyrics`                                                   |
-| Queue         | `GET/POST /users/me/queue`, `PATCH /users/me/queue` (optional queue synchronization)                                       |
-| Notifications | `GET /notifications`, `POST /notifications/:id/read`, `POST /notifications/read-all`                                       |
-| Subscriptions | `GET /plans`, `POST /subscriptions` (purchase 1/3/6/12 months)                                                             |
-| Payments      | `POST /payments`, gateway callback, status tracking                                                                        |
-| Uploads       | song audio (MP3/WAV/FLAC) + cover/avatar images, stored properly                                                           |
-| Reports       | aggregated stats for artists / support / admin (computed server-side)                                                      |
+| Area                               | Endpoints                                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Auth                               | `POST /auth/register`, `POST /auth/register/artist`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/forgot-password` |
+| Users                              | `GET/PATCH /users/me`, `GET /users/:id`, `POST /users/:id/follow`, `DELETE /users/:id/follow`, `DELETE /users/me`          |
+| Artists                            | `GET /artists/:id`, `GET /artists/:id/discography`                                                                         |
+| Catalog                            | `GET /songs`, `GET /albums`, `GET /search?q=` (search + sort/filter)                                                       |
+| Playlists                          | `GET/POST /playlists`, `PATCH/DELETE /playlists/:id`, `POST/DELETE /playlists/:id/songs`                                   |
+| Player                             | `GET /songs/:id/stream`, `POST /songs/:id/play`, `GET /songs/:id/lyrics`                                                   |
+| Queue                              | `GET/POST /users/me/queue`, `PATCH /users/me/queue` (optional queue synchronization)                                       |
+| Notifications                      | `GET /notifications`, `POST /notifications/:id/read`, `POST /notifications/read-all`                                       |
+| Subscriptions                      | `GET /plans`, `POST /subscriptions` (purchase 1/3/6/12 months)                                                             |
+| Payments                           | `POST /payments`, gateway callback, status tracking                                                                        |
+| Uploads                            | song audio (MP3/WAV/FLAC) + cover/avatar images, stored properly                                                           |
+| Reports                            | aggregated stats for artists / support / admin (computed server-side)                                                      |
+| Artist Works                       |
+| GET /artists/me/works              | list artist songs/albums with statistics                                                                                   |
+| POST /artists/me/works             | upload and publish a new track                                                                                             |
+| PATCH /artists/me/works/:id        | edit track metadata                                                                                                        |
+| DELETE /artists/me/works/:id       | remove published work                                                                                                      |
+| POST /artists/me/albums            | create album                                                                                                               |
+| PATCH /artists/me/albums/:id       | update album information                                                                                                   |
+| POST /artists/me/albums/:id/tracks | add existing tracks to album                                                                                               |
 
 ## Business rules the backend must own
 
@@ -58,6 +71,15 @@ the Local-Storage mock. The data shapes mirror [`src/types/models.ts`](../src/ty
   for users with Gold subscription.
 - **Download access**: offline/download endpoints must verify that the user has a Gold
   subscription.
+
+- Only verified artists may publish works.
+- Uploaded audio files must be validated by type and size.
+- Supported audio formats are MP3, WAV, and FLAC.
+- Tracks are created independently by default and can later be assigned to an album.
+- Album membership changes must not duplicate song records.
+- Artist statistics (listeners, streams, revenue) are calculated server-side.
+- Gold-level statistics visibility rules apply to listeners; artists can view their own
+  work statistics.
 
 ## Music Player Requirements
 
