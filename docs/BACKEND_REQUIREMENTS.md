@@ -7,15 +7,16 @@ the Local-Storage mock. The data shapes mirror [`src/types/models.ts`](../src/ty
 ## Models (initial)
 
 - **User** — id, role (`listener|artist|support|admin`), email, hashed password,
-  system `username`, `displayName`, avatar, birthDate, gender, subscription (tier +
+  system `username`, displayName, avatar, birthDate, gender, subscription (tier +
   expiry), settings (notificationLimit, volume, language), follower/following relations,
   daily-stream stat.
-- **Artist** (extends User) — artistName, verification `status` (`pending|approved|
-rejected`) + reason, `verified`, portfolio, aggregate listeners/streams.
-- **Song** — title, artist, album (nullable), cover, duration, genre, year, lyrics,
-  listeners, streams.
+- **Artist** (extends User) — artistName, verification `status` (`pending|approved|rejected`)
+  - reason, `verified`, portfolio, aggregate listeners/streams.
+- **Song** — title, artist, album (nullable), cover, audio file/stream URL, duration,
+  genre, year, lyrics, listeners, streams.
 - **Album** — title, artist, cover, releaseType (`single|album`), year, genre, tracks.
 - **Playlist** — name, owner, cover, tracks, timestamps.
+- **Playback History** — user, song, played timestamp, completion status (for stream counting).
 - **Notification** — user, type, title, body, read, link, timestamp.
 - (Phase-2 only) **Subscription plan & price**, **Ticket**, **PaymentTransaction**,
   **MonthlyPayout/Audit**.
@@ -29,6 +30,8 @@ rejected`) + reason, `verified`, portfolio, aggregate listeners/streams.
 | Artists       | `GET /artists/:id`, `GET /artists/:id/discography`                                                                         |
 | Catalog       | `GET /songs`, `GET /albums`, `GET /search?q=` (search + sort/filter)                                                       |
 | Playlists     | `GET/POST /playlists`, `PATCH/DELETE /playlists/:id`, `POST/DELETE /playlists/:id/songs`                                   |
+| Player        | `GET /songs/:id/stream`, `POST /songs/:id/play`, `GET /songs/:id/lyrics`                                                   |
+| Queue         | `GET/POST /users/me/queue`, `PATCH /users/me/queue` (optional queue synchronization)                                       |
 | Notifications | `GET /notifications`, `POST /notifications/:id/read`, `POST /notifications/read-all`                                       |
 | Subscriptions | `GET /plans`, `POST /subscriptions` (purchase 1/3/6/12 months)                                                             |
 | Payments      | `POST /payments`, gateway callback, status tracking                                                                        |
@@ -37,11 +40,11 @@ rejected`) + reason, `verified`, portfolio, aggregate listeners/streams.
 
 ## Business rules the backend must own
 
-- **Subscription tiers** (see `lib/subscription.ts`): playlist limits (6 / 100 / ∞),
+- **Subscription tiers** (see `lib/subscription.ts): playlist limits (6 / 100 / ∞),
   daily stream limit (60 / ∞ / ∞), avatar upload (silver+), download/early-access/stats
   (gold). Pricing is **dynamic** and admin-editable without code changes.
-- **Access control**: no user may access resources of equal-or-higher-privilege users, or
-  beyond their subscription limits; read/write scopes kept minimal.
+- **Access control**: no user may access resources of equal-or-higher-privilege users,
+  or beyond their subscription limits; read/write scopes kept minimal.
 - **Subscription lifecycle**: expiry + renewal; periods of 1, 3, 6, 12 months.
 - **Notifications** generated server-side per role (expiry warnings, new releases,
   verification results + reason, monthly payout, new tickets/verification requests).
@@ -49,6 +52,37 @@ rejected`) + reason, `verified`, portfolio, aggregate listeners/streams.
   frontend to compute (e.g. user counts, revenue, payouts).
 - **Settings sync**: user preferences persist server-side and sync across devices.
 - **Artist payout** = function of listeners and stream counts (formula provided in Phase 2).
+- **Playback tracking**: completed song plays should update stream counts and listening
+  history.
+- **Gold-only statistics**: detailed listener and stream statistics must only be available
+  for users with Gold subscription.
+- **Download access**: offline/download endpoints must verify that the user has a Gold
+  subscription.
+
+## Music Player Requirements
+
+- The backend must provide playable song resources through validated audio URLs/files.
+- Song responses should include:
+  - audio stream URL
+  - cover image
+  - duration
+  - artist information
+  - album information
+  - optional lyrics
+  - listener count
+  - total stream count
+- Player actions should be supported:
+  - play
+  - pause (frontend only)
+  - seek (frontend only)
+  - next/previous queue navigation (frontend or synchronized queue)
+  - shuffle and repeat modes (frontend only)
+- Queue synchronization is optional, but the backend may support storing a user's active
+  queue for multi-device playback.
+- Each completed playback should create/update listening history and increase stream count.
+- Lyrics should be returned only when available.
+- Artist and album links are handled by the frontend but require stable IDs from backend.
+- Listener count and stream statistics shown in the player must respect subscription rules.
 
 ## Notes carried from Phase 1
 

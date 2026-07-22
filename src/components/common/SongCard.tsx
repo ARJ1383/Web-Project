@@ -4,11 +4,14 @@ import type { ReactNode } from 'react';
 import type { Song } from '@/types/models';
 import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { usePlayerStore } from '@/stores/playerStore';
+import { useCatalogStore } from '@/stores/catalogStore';
 
 export interface SongCardProps {
   song: Song;
   actions?: ReactNode;
   className?: string;
+  audioUrl: string;
 }
 
 /**
@@ -21,6 +24,10 @@ export interface SongCardProps {
 export function SongCard({ song, actions, className }: SongCardProps) {
   const navigate = useNavigate();
 
+  const songs = useCatalogStore((s) => s.songs);
+
+  const playSong = usePlayerStore((s) => s.playSong);
+
   return (
     <div
       className={cn(
@@ -30,7 +37,13 @@ export function SongCard({ song, actions, className }: SongCardProps) {
     >
       <button
         type="button"
-        onClick={() => navigate(`/player?song=${song.id}`)}
+        onClick={() => {
+          playSong(
+            song.id,
+            songs.map((s) => s.id),
+          );
+          navigate(`/player?song=${song.id}`);
+        }}
         className="relative shrink-0"
         aria-label={`play ${song.title}`}
       >
@@ -49,7 +62,13 @@ export function SongCard({ song, actions, className }: SongCardProps) {
       <div className="min-w-0 flex-1">
         <button
           type="button"
-          onClick={() => navigate(`/player?song=${song.id}`)}
+          onClick={() => {
+            playSong(
+              song.id,
+              songs.map((s) => s.id),
+            );
+            navigate(`/player?song=${song.id}`);
+          }}
           className="block max-w-full truncate text-start text-sm font-semibold text-text hover:underline"
         >
           {song.title}

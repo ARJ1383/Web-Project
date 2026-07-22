@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileNav } from './MobileNav';
 import { PlayerBarSlot } from './PlayerBarSlot';
+import { AudioController } from '@/features/player/AudioController';
 
 /** Authenticated app shell: sidebar (desktop) / bottom nav (mobile) + player slot. */
 export function AppLayout() {
@@ -18,6 +19,7 @@ export function AppLayout() {
         </main>
       </div>
       <MobileNav />
+      <AudioController />
       <PlayerBarSlot />
     </div>
   );
