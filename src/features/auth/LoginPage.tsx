@@ -19,10 +19,25 @@ export function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   if (currentUserId) return <Navigate to="/" replace />;
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/';
+
+  const submitForgot = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = loginSchema.shape.email.safeParse(forgotEmail);
+    if (!parsed.success) {
+      setForgotError(t('validation.email'));
+      return;
+    }
+    setForgotError(null);
+    setForgotOpen(false);
+    setForgotEmail('');
+    toast.success(t('auth.forgotSent'));
+  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,9 +111,24 @@ export function LoginPage() {
         open={forgotOpen}
         onClose={() => setForgotOpen(false)}
         title={t('auth.forgotPassword')}
-        footer={<Button onClick={() => setForgotOpen(false)}>{t('common.close')}</Button>}
       >
-        <p className="text-sm text-muted">{t('auth.forgotInfo')}</p>
+        <form onSubmit={submitForgot} className="flex flex-col gap-4" noValidate>
+          <p className="text-sm text-muted">{t('auth.forgotInfo')}</p>
+          <Input
+            type="email"
+            label={t('auth.email')}
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            error={forgotError ?? undefined}
+            autoComplete="email"
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setForgotOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit">{t('auth.forgotSubmit')}</Button>
+          </div>
+        </form>
       </Modal>
     </AuthShell>
   );

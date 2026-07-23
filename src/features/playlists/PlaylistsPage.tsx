@@ -12,13 +12,14 @@ import { toast } from '@/stores/toastStore';
 export function PlaylistsPage() {
   const { t } = useTranslation();
   const user = useCurrentUser();
-  const getByOwner = usePlaylistStore((s) => s.getByOwner);
+  // Subscribe to the array itself so create/delete re-render this page.
+  const allPlaylists = usePlaylistStore((s) => s.playlists);
   const create = usePlaylistStore((s) => s.create);
   const [open, setOpen] = useState(false);
 
   if (!user) return null;
 
-  const playlists = getByOwner(user.id);
+  const playlists = allPlaylists.filter((p) => p.ownerId === user.id);
   const max = getCapabilities(user.subscription.tier).maxPlaylists;
   const atLimit = playlists.length >= max;
 

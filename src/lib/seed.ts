@@ -26,6 +26,7 @@ import type {
 
 const PASSWORD = 'password123';
 const cover = (seed: string) => `https://picsum.photos/seed/${seed}/400/400`;
+const audio = (id: string) => `/audio/${id}.mp3`;
 const NOW = '2026-06-01T10:00:00.000Z';
 
 function baseUser(
@@ -200,6 +201,10 @@ const albums: Album[] = [
   },
 ];
 
+/**
+ * Durations match the bundled demo audio in `public/audio/` so the player's
+ * progress bar and the metadata shown on cards agree.
+ */
 const songs: Song[] = [
   song(
     'song_horizon',
@@ -209,9 +214,10 @@ const songs: Song[] = [
     'album_aurora_nightfall',
     'Nightfall',
     'horizon',
-    214,
+    32,
     18420,
     96000,
+    'در افق دور، نور می‌تابد\nآرام، آرام، شب می‌خوابد\nHorizon calls beyond the sea\nA quiet light comes home to me',
   ),
   song(
     'song_aurora_lights',
@@ -221,7 +227,7 @@ const songs: Song[] = [
     'album_aurora_nightfall',
     'Nightfall',
     'lights',
-    198,
+    28,
     15300,
     81000,
   ),
@@ -233,9 +239,10 @@ const songs: Song[] = [
     'album_aurora_nightfall',
     'Nightfall',
     'stillwater',
-    245,
+    36,
     9900,
     52000,
+    'Still water runs deep and slow\nCarrying dreams of long ago',
   ),
   song(
     'song_midnight_drive',
@@ -245,7 +252,7 @@ const songs: Song[] = [
     'album_neon_drive',
     'Drive',
     'midnight',
-    230,
+    30,
     9100,
     70000,
   ),
@@ -257,7 +264,7 @@ const songs: Song[] = [
     'album_neon_drive',
     'Drive',
     'chrome',
-    201,
+    26,
     7600,
     62000,
   ),
@@ -269,9 +276,10 @@ const songs: Song[] = [
     null,
     undefined,
     'rainy',
-    178,
+    34,
     30200,
     145000,
+    'پشت پنجره، باران می‌بارد\nفنجان چای و یک آهنگ آرام',
   ),
 ];
 
@@ -286,6 +294,7 @@ function song(
   duration: number,
   listeners: number,
   streams: number,
+  lyrics?: string,
 ): Song {
   return {
     id,
@@ -296,8 +305,10 @@ function song(
     albumTitle,
     coverUrl: cover(coverSeed),
     duration,
+    lyrics,
     listeners,
     streams,
+    audioFile: audio(id),
     createdAt: NOW,
   };
 }

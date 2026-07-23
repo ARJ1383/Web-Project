@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Palette, Volume2, BellRing, CreditCard, Trash2, ChevronLeft } from 'lucide-react';
 import { useCurrentUser, useAuthStore } from '@/stores/authStore';
 import { useCatalogStore } from '@/stores/catalogStore';
+import { usePlayerStore } from '@/stores/playerStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useLanguageStore } from '@/stores/languageStore';
 import { Button, Select, Modal } from '@/components/ui';
@@ -45,6 +46,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const user = useCurrentUser();
   const updateUser = useCatalogStore((s) => s.updateUser);
+  const setPlayerVolume = usePlayerStore((s) => s.setVolume);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const { theme, setTheme } = useThemeStore();
   const { language, setLanguage } = useLanguageStore();
@@ -98,7 +100,12 @@ export function SettingsPage() {
             min={0}
             max={100}
             value={user.settings.volume}
-            onChange={(e) => updateSettings({ volume: Number(e.target.value) })}
+            onChange={(e) => {
+              const volume = Number(e.target.value);
+              updateSettings({ volume });
+              // The system volume drives the music player too.
+              setPlayerVolume(volume);
+            }}
             className="w-48 accent-accent"
             aria-label={t('settings.volume')}
           />

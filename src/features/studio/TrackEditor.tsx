@@ -1,8 +1,16 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { UploadCloud } from 'lucide-react';
 import { useCurrentUser } from '@/stores/authStore';
 import { useCatalogStore } from '@/stores/catalogStore';
+import { Button, Input } from '@/components/ui';
+import { toast } from '@/stores/toastStore';
+import { readAudioDuration, readFileAsDataUrl } from '@/lib/files';
+import { uid } from '@/lib/format';
 
+/** Publish a single track: audio upload (MP3/WAV/FLAC), cover, metadata, lyrics. */
 export function TrackEditor() {
+  const { t } = useTranslation();
   const me = useCurrentUser();
 
   const addSong = useCatalogStore((s) => s.addSong);
@@ -15,113 +23,128 @@ export function TrackEditor() {
 
   const [cover, setCover] = useState<File | null>(null);
   const [audio, setAudio] = useState<File | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
-  function publishSong() {
-    if (!me || !title.trim()) return;
+  if (!me || me.role !== 'artist') return null;
 
-    addSong({
-      id: `song_${Date.now()}`,
+  const publishSong = async () => {
+    if (!title.trim()) {
+      toast.error(t('studio.titleRequired'));
+      return;
+    }
+    if (!audio) {
+      toast.error(t('studio.audioRequired'));
+      return;
+    }
 
-      title,
+    setPublishing(true);
+    try {
+      const audioUrl = URL.createObjectURL(audio);
+      const [coverUrl, duration] = await Promise.all([
+        cover
+          ? readFileAsDataUrl(cover)
+          : Promise.resolve(`https://picsum.photos/seed/${uid('cv')}/400/400`),
+        readAudioDuration(audioUrl),
+      ]);
 
-      artistId: me.id,
+      addSong({
+        id: uid('song'),
+        title: title.trim(),
+        artistId: me.id,
+        artistName: 'artistName' in me ? me.artistName : me.displayName,
+        albumId: null,
+        coverUrl,
+        duration,
+        genre: genre.trim() || undefined,
+        releaseYear: year ? Number(year) : undefined,
+        lyrics: lyrics.trim() || undefined,
+        listeners: 0,
+        streams: 0,
+        audioFile: audioUrl,
+        collaborators: collaborators
+          ? collaborators
+              .split(',')
+              .map((x) => x.trim())
+              .filter(Boolean)
+          : [],
+        revenue: 0,
+        createdAt: new Date().toISOString(),
+      });
 
-      artistName: 'artistName' in me ? me.artistName : me.displayName,
-
-      albumId: null,
-
-      coverUrl: cover ? URL.createObjectURL(cover) : 'https://picsum.photos/400',
-
-      duration: 0,
-
-      genre,
-
-      releaseYear: year ? Number(year) : undefined,
-
-      lyrics,
-
-      listeners: 0,
-
-      streams: 0,
-
-      audioFile: audio ? URL.createObjectURL(audio) : undefined,
-
-      collaborators: collaborators ? collaborators.split(',').map((x) => x.trim()) : [],
-
-      revenue: 0,
-
-      createdAt: new Date().toISOString(),
-    });
-
-    setTitle('');
-    setGenre('');
-    setYear('');
-    setLyrics('');
-    setCollaborators('');
-    setCover(null);
-    setAudio(null);
-  }
+      toast.success(t('studio.trackPublished'));
+      setTitle('');
+      setGenre('');
+      setYear('');
+      setLyrics('');
+      setCollaborators('');
+      setCover(null);
+      setAudio(null);
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   return (
-    <div className="rounded-2xl card-surface flex flex-col gap-4">
-      <h2 className="text-xl font-bold">انتشار آهنگ</h2>
+    <div className="card-surface flex flex-col gap-4">
+      <h2 className="text-xl font-bold text-text">{t('studio.publishTrack')}</h2>
 
-      <input
-        className="input"
-        placeholder="عنوان آهنگ"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Input
+          label={t('studio.trackTitle')}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <Input label={t('studio.genre')} value={genre} onChange={(e) => setGenre(e.target.value)} />
+        <Input
+          type="number"
+          label={t('studio.releaseYear')}
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+        />
+        <Input
+          label={t('studio.collaborators')}
+          value={collaborators}
+          onChange={(e) => setCollaborators(e.target.value)}
+          hint={t('studio.collaboratorsHint')}
+        />
+      </div>
 
-      <input
-        className="input"
-        placeholder="ژانر"
-        value={genre}
-        onChange={(e) => setGenre(e.target.value)}
-      />
-
-      <input
-        className="input"
-        placeholder="سال انتشار"
-        value={year}
-        onChange={(e) => setYear(e.target.value)}
-      />
-
-      <input
-        className="input"
-        placeholder="هنرمندان همکار (با , جدا کنید)"
-        value={collaborators}
-        onChange={(e) => setCollaborators(e.target.value)}
-      />
-
-      <textarea
-        className="input min-h-40"
-        placeholder="متن ترانه"
-        value={lyrics}
-        onChange={(e) => setLyrics(e.target.value)}
-      />
-
-      <label>
-        کاور آهنگ
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setCover(e.target.files?.[0] ?? null)}
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-text">{t('studio.lyrics')}</span>
+        <textarea
+          className="input-base min-h-32 resize-y"
+          value={lyrics}
+          onChange={(e) => setLyrics(e.target.value)}
         />
       </label>
 
-      <label>
-        فایل صوتی
-        <input
-          type="file"
-          accept=".mp3,.wav,.flac,audio/*"
-          onChange={(e) => setAudio(e.target.files?.[0] ?? null)}
-        />
-      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-text">{t('studio.cover')}</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setCover(e.target.files?.[0] ?? null)}
+            className="input-base file:me-3 file:rounded-lg file:border-0 file:bg-accent/15 file:px-3 file:py-1.5 file:text-sm file:text-accent"
+          />
+        </label>
 
-      <button className="btn-primary" onClick={publishSong}>
-        انتشار
-      </button>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-text">{t('studio.audioFile')}</span>
+          <input
+            type="file"
+            accept=".mp3,.wav,.flac,audio/*"
+            onChange={(e) => setAudio(e.target.files?.[0] ?? null)}
+            className="input-base file:me-3 file:rounded-lg file:border-0 file:bg-accent/15 file:px-3 file:py-1.5 file:text-sm file:text-accent"
+          />
+          <span className="text-xs text-muted">{t('studio.audioFormats')}</span>
+        </label>
+      </div>
+
+      <Button onClick={() => void publishSong()} disabled={publishing} className="self-start">
+        <UploadCloud size={16} />
+        {t('studio.publish')}
+      </Button>
     </div>
   );
 }

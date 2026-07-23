@@ -434,6 +434,9 @@ export function DashboardPage() {
                 <thead className="bg-surface-2/60 text-muted">
                   <tr>
                     <th className="px-4 py-3 text-start font-medium">
+                      {t('dashboard.ticket.table.id')}
+                    </th>
+                    <th className="px-4 py-3 text-start font-medium">
                       {t('dashboard.ticket.table.subject')}
                     </th>
                     <th className="px-4 py-3 text-start font-medium">
@@ -453,6 +456,9 @@ export function DashboardPage() {
                 <tbody>
                   {tickets.map((ticket) => (
                     <tr key={ticket.id} className="border-t border-border hover:bg-surface-2/40">
+                      <td className="px-4 py-3 font-mono text-xs text-muted" dir="ltr">
+                        {ticket.id}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
                           <p className="font-medium text-text">{ticket.subject}</p>
@@ -530,7 +536,12 @@ export function DashboardPage() {
                 <tbody>
                   {audits.map((record) => (
                     <tr key={record.id} className="border-t border-border hover:bg-surface-2/40">
-                      <td className="px-4 py-3 font-medium text-text">{record.artistName}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-text">{record.artistName}</p>
+                        <p className="font-mono text-xs text-muted" dir="ltr">
+                          {record.artistId}
+                        </p>
+                      </td>
                       <td className="px-4 py-3 text-muted">
                         {formatCount(record.uniqueListeners, language)}
                       </td>

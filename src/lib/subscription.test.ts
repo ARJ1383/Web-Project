@@ -20,8 +20,14 @@ describe('subscription tier rules (PDF جدول ۱)', () => {
     expect(getCapabilities('gold').canUploadAvatar).toBe(true);
   });
 
-  it('gates downloads, early access and stats to gold only', () => {
-    for (const cap of ['canDownload', 'earlyAccess', 'canSeeStats'] as const) {
+  it('gates downloads to silver and gold (PDF جدول ۱)', () => {
+    expect(getCapabilities('basic').canDownload).toBe(false);
+    expect(getCapabilities('silver').canDownload).toBe(true);
+    expect(getCapabilities('gold').canDownload).toBe(true);
+  });
+
+  it('gates early access and stats to gold only', () => {
+    for (const cap of ['earlyAccess', 'canSeeStats'] as const) {
       expect(getCapabilities('basic')[cap]).toBe(false);
       expect(getCapabilities('silver')[cap]).toBe(false);
       expect(getCapabilities('gold')[cap]).toBe(true);

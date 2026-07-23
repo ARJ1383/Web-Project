@@ -27,4 +27,12 @@ describe('notificationStore', () => {
     useNotificationStore.getState().markAllRead('support_reza');
     expect(useNotificationStore.getState().unreadCount('support_reza')).toBe(0);
   });
+
+  it('deletes a notification', () => {
+    const before = useNotificationStore.getState().getByUser('user_sara').length;
+    useNotificationStore.getState().remove('ntf_1');
+    const after = useNotificationStore.getState().getByUser('user_sara');
+    expect(after.length).toBe(before - 1);
+    expect(after.some((n) => n.id === 'ntf_1')).toBe(false);
+  });
 });

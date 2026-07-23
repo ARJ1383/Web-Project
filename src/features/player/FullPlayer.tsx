@@ -1,168 +1,120 @@
-import { X, Pause, Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2 } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-
+import { useTranslation } from 'react-i18next';
+import { ChevronDown, Download, ListMusic } from 'lucide-react';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useCatalogStore } from '@/stores/catalogStore';
 import { useCurrentUser } from '@/stores/authStore';
+import { useLanguageStore } from '@/stores/languageStore';
+import { getCapabilities } from '@/lib/subscription';
+import { formatCount } from '@/lib/format';
+import { QueuePanel } from './QueuePanel';
+import { PlayerControls, PlayerProgress, VolumeSlider } from './PlayerControls';
 
+/** Full-screen player view (the expanded state of the mini player / bar). */
 export function FullPlayer({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const user = useCurrentUser();
+  const language = useLanguageStore((s) => s.language);
 
-  const songs = useCatalogStore((s) => s.songs);
+  const currentSongId = usePlayerStore((s) => s.currentSongId);
+  const song = useCatalogStore((s) =>
+    currentSongId ? s.songs.find((item) => item.id === currentSongId) : undefined,
+  );
 
-  const {
-    currentSongId,
-    playing,
-    currentTime,
-    duration,
-    volume,
-    shuffle,
-    repeat,
-    toggle,
-    next,
-    previous,
-    seek,
-    setVolume,
-    toggleShuffle,
-    cycleRepeat,
-  } = usePlayerStore();
-
-  const song = songs.find((s) => s.id === currentSongId);
+  const [queueOpen, setQueueOpen] = useState(false);
 
   if (!song) return null;
 
+  const caps = user ? getCapabilities(user.subscription.tier) : undefined;
+
   return (
-    <div
-      className="
-        fixed
-        inset-0
-        z-50
-        flex
-        flex-col
-        items-center
-        gap-6
-        overflow-y-auto
-        bg-surface
-        p-6
-      "
-    >
-      <button className="self-end" onClick={onClose}>
-        <X />
-      </button>
+    <div className="fixed inset-0 z-50 flex flex-col items-center gap-6 overflow-y-auto bg-surface p-6">
+      <div className="flex w-full max-w-xl items-center justify-between">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t('player.collapse')}
+          title={t('player.collapse')}
+          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-text"
+        >
+          <ChevronDown size={22} />
+        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setQueueOpen((v) => !v)}
+            aria-label={t('player.queue')}
+            title={t('player.queue')}
+            className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-text"
+          >
+            <ListMusic size={20} />
+          </button>
+
+          {caps?.canDownload && (
+            <a
+              href={song.audioFile ?? '/audio/sample.mp3'}
+              download={`${song.title}.mp3`}
+              aria-label={t('player.download')}
+              title={t('player.download')}
+              className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-text"
+            >
+              <Download size={20} />
+            </a>
+          )}
+        </div>
+      </div>
 
       <img
         src={song.coverUrl}
         alt={song.title}
-        className="
-          h-72
-          w-72
-          rounded-2xl
-          object-cover
-        "
+        className="h-64 w-64 rounded-2xl object-cover shadow-glow-sm sm:h-72 sm:w-72"
       />
 
       <div className="text-center">
-        <h1 className="text-3xl font-bold">{song.title}</h1>
+        <h1 className="text-3xl font-bold text-text">{song.title}</h1>
 
         <div className="mt-2 flex justify-center gap-2 text-muted">
-          <Link to={`/artist/${song.artistId}`} className="hover:text-accent">
+          <Link to={`/artist/${song.artistId}`} onClick={onClose} className="hover:text-accent">
             {song.artistName}
           </Link>
 
-          {song.albumId && (
+          {song.albumId && song.albumTitle && (
             <>
-              <span>•</span>
-
-              <Link to={`/albums/${song.albumId}`} className="hover:text-accent">
+              <span aria-hidden>•</span>
+              <Link to={`/albums/${song.albumId}`} onClick={onClose} className="hover:text-accent">
                 {song.albumTitle}
               </Link>
             </>
           )}
         </div>
+
+        {caps?.canSeeStats && (
+          <p className="mt-2 text-sm text-muted">
+            {t('player.listeners')}: {formatCount(song.listeners, language)}
+            {' · '}
+            {t('player.streams')}: {formatCount(song.streams, language)}
+          </p>
+        )}
       </div>
 
-      {/* progress */}
+      <PlayerProgress fallbackDuration={song.duration} className="max-w-xl" />
 
-      <input
-        type="range"
-        min={0}
-        max={duration || song.duration}
-        value={currentTime}
-        onChange={(e) => seek(Number(e.target.value))}
-        className="w-full max-w-xl"
-      />
+      <PlayerControls size="lg" />
 
-      {/* controls */}
-
-      <div className="flex items-center gap-5">
-        <button onClick={toggleShuffle} className={shuffle ? 'text-accent' : 'text-muted'}>
-          <Shuffle />
-        </button>
-
-        <button onClick={previous}>
-          <SkipBack />
-        </button>
-
-        <button
-          onClick={toggle}
-          className="
-            rounded-full
-            bg-accent
-            p-4
-            text-white
-          "
-        >
-          {playing ? <Pause /> : <Play />}
-        </button>
-
-        <button onClick={next}>
-          <SkipForward />
-        </button>
-
-        <button onClick={cycleRepeat} className={repeat !== 'off' ? 'text-accent' : 'text-muted'}>
-          <Repeat />
-        </button>
-      </div>
-
-      {/* volume */}
-
-      <div className="flex items-center gap-3">
-        <Volume2 />
-
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={volume}
-          onChange={(e) => setVolume(Number(e.target.value))}
-        />
-      </div>
-
-      {/* Gold stats */}
-
-      {user?.subscription.tier === 'gold' && (
-        <p className="text-sm text-muted">
-          شنونده: {song.listeners}
-          {' | '}
-          پخش: {song.streams}
-        </p>
-      )}
-
-      {/* lyrics */}
+      <VolumeSlider />
 
       {song.lyrics && (
-        <div
-          className="
-            max-w-xl
-            whitespace-pre-line
-            text-center
-            text-sm
-            text-muted
-          "
-        >
-          {song.lyrics}
-        </div>
+        <section className="w-full max-w-xl rounded-2xl border border-border bg-surface-2 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-text">{t('player.lyrics')}</h2>
+          <p className="whitespace-pre-line text-center text-sm leading-7 text-muted">
+            {song.lyrics}
+          </p>
+        </section>
       )}
+
+      {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
     </div>
   );
 }

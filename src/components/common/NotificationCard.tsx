@@ -9,6 +9,7 @@ import {
   Ticket,
   UserPlus,
   Check,
+  Trash2,
 } from 'lucide-react';
 import type { AppNotification, NotificationType } from '@/types/models';
 import { useLanguageStore } from '@/stores/languageStore';
@@ -28,9 +29,10 @@ const typeIcons: Record<NotificationType, typeof Bell> = {
 export interface NotificationCardProps {
   notification: AppNotification;
   onMarkRead: (id: string) => void;
+  onRemove: (id: string) => void;
 }
 
-export function NotificationCard({ notification, onMarkRead }: NotificationCardProps) {
+export function NotificationCard({ notification, onMarkRead, onRemove }: NotificationCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const language = useLanguageStore((s) => s.language);
@@ -76,17 +78,28 @@ export function NotificationCard({ notification, onMarkRead }: NotificationCardP
         </div>
       </div>
 
-      {!notification.read && (
+      <div className="flex shrink-0 items-center gap-1">
+        {!notification.read && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onMarkRead(notification.id)}
+            aria-label={t('notifications.markAsRead')}
+            title={t('notifications.markAsRead')}
+          >
+            <Check size={16} />
+          </Button>
+        )}
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => onMarkRead(notification.id)}
-          aria-label={t('notifications.markAsRead')}
-          title={t('notifications.markAsRead')}
+          onClick={() => onRemove(notification.id)}
+          aria-label={t('notifications.deleteNotification')}
+          title={t('notifications.deleteNotification')}
         >
-          <Check size={16} />
+          <Trash2 size={16} className="text-danger" />
         </Button>
-      )}
+      </div>
     </div>
   );
 }

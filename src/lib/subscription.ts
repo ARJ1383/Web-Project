@@ -37,7 +37,7 @@ export const TIER_CAPABILITIES: Record<SubscriptionTier, TierCapabilities> = {
     maxPlaylists: 100,
     dailyStreamLimit: Infinity,
     canUploadAvatar: true,
-    canDownload: false,
+    canDownload: true,
     earlyAccess: false,
     canSeeStats: false,
   },

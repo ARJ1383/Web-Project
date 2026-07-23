@@ -10,6 +10,7 @@ interface NotificationState {
   unreadCount: (userId: string) => number;
   markRead: (id: string) => void;
   markAllRead: (userId: string) => void;
+  remove: (id: string) => void;
   add: (notification: AppNotification) => void;
 }
 
@@ -37,6 +38,8 @@ export const useNotificationStore = create<NotificationState>()(
             n.userId === userId ? { ...n, read: true } : n,
           ),
         })),
+
+      remove: (id) => set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
 
       add: (notification) => set((s) => ({ notifications: [notification, ...s.notifications] })),
     }),

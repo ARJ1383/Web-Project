@@ -16,6 +16,13 @@ interface PlayerState {
   shuffle: boolean;
   repeat: RepeatMode;
 
+  /**
+   * One-shot seek request. The UI only mutates state; `AudioController` applies
+   * it to the real `<audio>` element and then clears it. The nonce lets two
+   * consecutive seeks to the same time still fire.
+   */
+  pendingSeek: { time: number; nonce: number } | null;
+
   playSong: (songId: string, queue?: string[]) => void;
 
   play: () => void;
@@ -25,7 +32,12 @@ interface PlayerState {
   next: () => void;
   previous: () => void;
 
-  seek: (time: number) => void;
+  /** User-initiated seek (progress-bar drag). */
+  requestSeek: (time: number) => void;
+  /** Called by AudioController once the seek reached the audio element. */
+  consumeSeek: () => void;
+  /** Playback-position sync coming back from the audio element. */
+  syncTime: (time: number) => void;
 
   setDuration: (time: number) => void;
 
@@ -55,13 +67,18 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   repeat: 'off',
 
+  pendingSeek: null,
+
   playSong: (songId, queue) =>
-    set({
+    set((s) => ({
       currentSongId: songId,
       queue: queue ?? [songId],
       playing: true,
       currentTime: 0,
-    }),
+      duration: songId === s.currentSongId ? s.duration : 0,
+      // Restart from the top even when the same song is re-selected.
+      pendingSeek: { time: 0, nonce: (s.pendingSeek?.nonce ?? 0) + 1 },
+    })),
 
   play: () => set({ playing: true }),
 
@@ -69,7 +86,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   toggle: () => set((s) => ({ playing: !s.playing })),
 
-  seek: (time) => set({ currentTime: time }),
+  requestSeek: (time) =>
+    set((s) => ({
+      currentTime: time,
+      pendingSeek: { time, nonce: (s.pendingSeek?.nonce ?? 0) + 1 },
+    })),
+
+  consumeSeek: () => set({ pendingSeek: null }),
+
+  syncTime: (time) => set({ currentTime: time }),
 
   setDuration: (time) => set({ duration: time }),
 
@@ -93,18 +118,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (!queue.length || !currentSongId) return;
 
     if (repeat === 'one') {
-      set({ currentTime: 0 });
+      get().requestSeek(0);
+      set({ playing: true });
       return;
     }
 
     if (shuffle) {
-      const next = queue[Math.floor(Math.random() * queue.length)];
+      const others = queue.filter((id) => id !== currentSongId);
+      const pool = others.length > 0 ? others : queue;
+      const nextId = pool[Math.floor(Math.random() * pool.length)];
 
-      set({
-        currentSongId: next,
-        currentTime: 0,
-      });
-
+      set({ currentSongId: nextId, currentTime: 0, duration: 0, playing: true });
       return;
     }
 
@@ -112,40 +136,34 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     if (index === queue.length - 1) {
       if (repeat === 'all') {
-        set({
-          currentSongId: queue[0],
-          currentTime: 0,
-        });
+        set({ currentSongId: queue[0], currentTime: 0, duration: 0, playing: true });
+      } else {
+        set({ playing: false });
       }
-
       return;
     }
 
-    set({
-      currentSongId: queue[index + 1],
-      currentTime: 0,
-    });
+    set({ currentSongId: queue[index + 1], currentTime: 0, duration: 0, playing: true });
   },
 
   previous: () => {
-    const { queue, currentSongId } = get();
+    const { queue, currentSongId, currentTime } = get();
 
     if (!queue.length || !currentSongId) return;
 
     const index = queue.indexOf(currentSongId);
 
-    if (index <= 0) return;
+    // Standard player behaviour: restart the track unless we are at its very start.
+    if (currentTime > 3 || index <= 0) {
+      get().requestSeek(0);
+      return;
+    }
 
-    set({
-      currentSongId: queue[index - 1],
-      currentTime: 0,
-    });
+    set({ currentSongId: queue[index - 1], currentTime: 0, duration: 0 });
   },
 
   addToQueue: (songId) =>
-    set((s) => ({
-      queue: [...s.queue, songId],
-    })),
+    set((s) => (s.queue.includes(songId) ? s : { queue: [...s.queue, songId] })),
 
   removeFromQueue: (songId) =>
     set((s) => ({

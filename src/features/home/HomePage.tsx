@@ -13,15 +13,18 @@ import { EmptyState } from '@/components/ui';
 export function HomePage() {
   const { t } = useTranslation();
   const user = useCurrentUser();
-  const latestAlbums = useCatalogStore((s) => s.latestAlbums);
-  const popularSongs = useCatalogStore((s) => s.popularSongs);
-  const getByOwner = usePlaylistStore((s) => s.getByOwner);
+  // Subscribe to the arrays themselves so catalog/playlist changes re-render.
+  const allAlbums = useCatalogStore((s) => s.albums);
+  const allSongs = useCatalogStore((s) => s.songs);
+  const allPlaylists = usePlaylistStore((s) => s.playlists);
 
   if (!user) return null;
 
-  const playlists = getByOwner(user.id);
-  const albums = latestAlbums(10);
-  const songs = popularSongs(8);
+  const playlists = allPlaylists.filter((p) => p.ownerId === user.id);
+  const albums = [...allAlbums]
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .slice(0, 10);
+  const songs = [...allSongs].sort((a, b) => b.streams - a.streams).slice(0, 8);
   const caps = getCapabilities(user.subscription.tier);
 
   return (

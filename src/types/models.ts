@@ -47,8 +47,10 @@ export interface User {
   settings: UserSettings;
   followerIds: string[];
   followingIds: string[];
-  /** Aggregate stat shown on the profile (mocked). */
+  /** Streams counted for the current day (drives the basic-tier daily limit). */
   dailyStreamCount: number;
+  /** ISO date (YYYY-MM-DD) the daily counter belongs to; resets on a new day. */
+  lastStreamDate?: string;
   createdAt: string;
 }
 

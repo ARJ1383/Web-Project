@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import i18n from '@/i18n';
 import { STORAGE_KEYS, zustandStorage } from '@/lib/storage';
 import { useCatalogStore } from './catalogStore';
+import { useNotificationStore } from './notificationStore';
 import { generateUsername, uid } from '@/lib/format';
 import type { Artist, Gender, User } from '@/types/models';
 
@@ -101,6 +103,25 @@ export const useAuthStore = create<AuthState>()(
           createdAt: new Date().toISOString(),
         };
         catalog.addArtist(artist);
+
+        // Alert every support/admin account so the request shows up in their
+        // notifications as well as the dashboard queue (PDF §2.6).
+        const now = new Date().toISOString();
+        catalog.users
+          .filter((u) => u.role === 'support' || u.role === 'admin')
+          .forEach((member) => {
+            useNotificationStore.getState().add({
+              id: uid('ntf'),
+              userId: member.id,
+              type: 'new_verification_request',
+              title: i18n.t('notifications.newArtistRequestTitle'),
+              body: i18n.t('notifications.newArtistRequestBody', { name: input.artistName }),
+              read: false,
+              createdAt: now,
+              link: '/dashboard',
+            });
+          });
+
         set({ currentUserId: artist.id });
         return { ok: true, user: artist };
       },

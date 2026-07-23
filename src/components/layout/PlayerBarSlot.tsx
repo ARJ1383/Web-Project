@@ -1,39 +1,33 @@
-import { Pause, Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, Music2 } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-
+import { useTranslation } from 'react-i18next';
+import { ChevronUp, Download, ListMusic, Music2, Pause, Play } from 'lucide-react';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useCatalogStore } from '@/stores/catalogStore';
 import { useCurrentUser } from '@/stores/authStore';
-
-import { ListMusic } from 'lucide-react';
-import { QueuePanel } from '@/features/player/QueuePanel';
-import { useState } from 'react';
-
+import { useLanguageStore } from '@/stores/languageStore';
+import { getCapabilities } from '@/lib/subscription';
+import { formatCount } from '@/lib/format';
 import { FullPlayer } from '@/features/player/FullPlayer';
+import { QueuePanel } from '@/features/player/QueuePanel';
+import { PlayerControls, PlayerProgress, VolumeSlider } from '@/features/player/PlayerControls';
 
+/**
+ * Persistent player: full control bar on desktop, compact mini player on
+ * mobile. Both expand into the full-screen `FullPlayer`.
+ */
 export function PlayerBarSlot() {
+  const { t } = useTranslation();
   const user = useCurrentUser();
+  const language = useLanguageStore((s) => s.language);
 
-  const songs = useCatalogStore((s) => s.songs);
+  const currentSongId = usePlayerStore((s) => s.currentSongId);
+  const playing = usePlayerStore((s) => s.playing);
+  const toggle = usePlayerStore((s) => s.toggle);
 
-  const {
-    currentSongId,
-    playing,
-    currentTime,
-    duration,
-    volume,
-    shuffle,
-    repeat,
-    toggle,
-    next,
-    previous,
-    seek,
-    setVolume,
-    toggleShuffle,
-    cycleRepeat,
-  } = usePlayerStore();
-
-  const song = songs.find((s) => s.id === currentSongId);
+  const song = useCatalogStore((s) =>
+    currentSongId ? s.songs.find((item) => item.id === currentSongId) : undefined,
+  );
 
   const [queueOpen, setQueueOpen] = useState(false);
   const [fullOpen, setFullOpen] = useState(false);
@@ -42,148 +36,135 @@ export function PlayerBarSlot() {
     return (
       <div
         data-testid="player-slot"
-        onClick={() => setFullOpen(true)}
-        className="
-          fixed
-          inset-x-0
-          bottom-0
-          z-40
-          flex
-          h-16
-          items-center
-          gap-3
-          border-t
-          border-border
-          bg-surface
-          px-4
-        "
+        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center gap-3 border-t border-border bg-surface px-4"
       >
         <Music2 size={20} className="text-muted" />
-        <span className="text-sm text-muted">چیزی در حال پخش نیست</span>
+        <span className="text-sm text-muted">{t('player.nothingPlaying')}</span>
       </div>
     );
   }
 
-  const isGold = user?.subscription.tier === 'gold';
+  const caps = user ? getCapabilities(user.subscription.tier) : undefined;
+
+  const expandCover = (
+    <button
+      type="button"
+      onClick={() => setFullOpen(true)}
+      aria-label={t('player.expand')}
+      title={t('player.expand')}
+      className="group relative shrink-0"
+    >
+      <img src={song.coverUrl} alt={song.title} className="h-12 w-12 rounded-lg object-cover" />
+      <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+        <ChevronUp size={18} className="text-white" />
+      </span>
+    </button>
+  );
 
   return (
     <div
       data-testid="player-slot"
-      className="
-        fixed
-        inset-x-0
-        bottom-0
-        z-40
-        flex
-        flex-col
-        border-t
-        border-border
-        bg-surface
-        px-4
-        py-2
-      "
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface"
     >
-      {/* progress */}
-      <input
-        type="range"
-        min={0}
-        max={duration || song.duration}
-        value={currentTime}
-        onChange={(e) => seek(Number(e.target.value))}
-        className="w-full"
-      />
-
-      <div className="flex items-center gap-4">
-        {/* cover */}
-        <img src={song.coverUrl} alt={song.title} className="h-12 w-12 rounded-lg object-cover" />
-
-        {/* info */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-text">{song.title}</p>
-
-          <div className="flex gap-1 text-xs text-muted">
-            <Link to={`/artist/${song.artistId}`} className="hover:text-accent">
+      {/* ---- Mobile mini player ---- */}
+      <div className="flex flex-col md:hidden">
+        <PlayerProgress fallbackDuration={song.duration} showTimes={false} />
+        <div className="flex items-center gap-2 px-3 pb-2 pt-1">
+          {expandCover}
+          <button
+            type="button"
+            onClick={() => setFullOpen(true)}
+            aria-label={t('player.expand')}
+            className="min-w-0 flex-1 text-start"
+          >
+            <span className="block truncate text-sm font-semibold text-text">{song.title}</span>
+            <span className="block truncate text-xs text-muted">
               {song.artistName}
-            </Link>
-
-            {song.albumId && (
-              <>
-                <span>•</span>
-
-                <Link to={`/albums/${song.albumId}`} className="hover:text-accent">
-                  {song.albumTitle}
-                </Link>
-              </>
-            )}
-          </div>
-
-          {isGold && (
-            <p className="text-xs text-muted">
-              شنونده: {song.listeners}
-              {' | '}
-              پخش: {song.streams}
-            </p>
-          )}
+              {song.albumTitle ? ` • ${song.albumTitle}` : ''}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={playing ? t('player.pause') : t('player.play')}
+            className="rounded-full bg-accent p-2.5 text-white"
+          >
+            {playing ? <Pause size={18} /> : <Play size={18} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setFullOpen(true)}
+            aria-label={t('player.expand')}
+            className="rounded-lg p-2 text-muted hover:text-text"
+          >
+            <ChevronUp size={20} />
+          </button>
         </div>
-
-        {/* controls */}
-
-        <button
-          onClick={toggle}
-          className="
-            rounded-full
-            bg-accent
-            p-2
-            text-white
-          "
-        >
-          {playing ? <Pause size={20} /> : <Play size={20} />}
-        </button>
-
-        <button onClick={next}>
-          <SkipForward size={20} />
-        </button>
-
-        <button onClick={previous}>
-          <SkipBack size={20} />
-        </button>
-
-        <button onClick={() => setQueueOpen(true)}>
-          <ListMusic size={20} />
-        </button>
-
-        {/* shuffle */}
-
-        <button onClick={toggleShuffle} className={shuffle ? 'text-accent' : 'text-muted'}>
-          <Shuffle size={20} />
-        </button>
-
-        {/* repeat */}
-
-        <button
-          onClick={cycleRepeat}
-          className={repeat !== 'off' ? 'text-accent' : 'text-muted'}
-          title={`Repeat: ${repeat}`}
-        >
-          <Repeat size={20} />
-        </button>
-
-        {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
-
-        {/* volume */}
-
-        <Volume2 size={18} />
-
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={volume}
-          onChange={(e) => setVolume(Number(e.target.value))}
-          className="w-24"
-        />
       </div>
 
+      {/* ---- Desktop bar ---- */}
+      <div className="hidden flex-col gap-1 px-4 py-2 md:flex">
+        <PlayerProgress fallbackDuration={song.duration} />
+
+        <div className="flex items-center gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {expandCover}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-text">{song.title}</p>
+              <div className="flex gap-1 text-xs text-muted">
+                <Link to={`/artist/${song.artistId}`} className="truncate hover:text-accent">
+                  {song.artistName}
+                </Link>
+                {song.albumId && song.albumTitle && (
+                  <>
+                    <span aria-hidden>•</span>
+                    <Link to={`/albums/${song.albumId}`} className="truncate hover:text-accent">
+                      {song.albumTitle}
+                    </Link>
+                  </>
+                )}
+              </div>
+              {caps?.canSeeStats && (
+                <p className="text-xs text-muted">
+                  {t('player.listeners')}: {formatCount(song.listeners, language)}
+                  {' · '}
+                  {t('player.streams')}: {formatCount(song.streams, language)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <PlayerControls />
+
+          <div className="flex flex-1 items-center justify-end gap-1">
+            <button
+              type="button"
+              onClick={() => setQueueOpen((v) => !v)}
+              aria-label={t('player.queue')}
+              title={t('player.queue')}
+              className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-text"
+            >
+              <ListMusic size={18} />
+            </button>
+
+            {caps?.canDownload && (
+              <a
+                href={song.audioFile ?? '/audio/sample.mp3'}
+                download={`${song.title}.mp3`}
+                aria-label={t('player.download')}
+                title={t('player.download')}
+                className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-text"
+              >
+                <Download size={18} />
+              </a>
+            )}
+
+            <VolumeSlider className="ms-2 hidden lg:flex" />
+          </div>
+        </div>
+      </div>
+
+      {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
       {fullOpen && <FullPlayer onClose={() => setFullOpen(false)} />}
     </div>
   );
