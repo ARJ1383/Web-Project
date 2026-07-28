@@ -40,3 +40,22 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+*.pyd
+*.egg-info/
+*.log
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Django
+db.sqlite3
+media/
+staticfiles/
