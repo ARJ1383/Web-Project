@@ -5,6 +5,9 @@ from django.db import models
 from django.utils.text import slugify
 from apps.common.models import TimeStampedModel
 from apps.common.utils import unique_handle, UploadTo
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
+
 
 class RoleChoices(models.TextChoices):
     LISTENER = 'listener', 'Listener'
@@ -61,6 +64,18 @@ class User(AbstractUser, TimeStampedModel):
     language = models.CharField(max_length=5, default='fa')
     daily_stream_count = models.PositiveIntegerField(default=0)
     last_stream_date = models.DateField(null=True, blank=True)
+
+    @property
+    def subscription_active(self):
+        return (
+            self.subscription_expires_at
+            and self.subscription_expires_at > timezone.now()
+        )
+
+    def extend_subscription(self, months):
+        base = self.subscription_expires_at or timezone.now()
+        self.subscription_expires_at = base + relativedelta(months=months)
+        self.save(update_fields=["subscription_expires_at"])
 
     objects = UserManager()
 

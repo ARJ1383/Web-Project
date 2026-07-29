@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db import models
 from apps.common.models import TimeStampedModel
 from apps.common.utils import UploadTo
+from datetime import timedelta
+
 
 class SubscriptionPlan(TimeStampedModel):
     code = models.CharField(max_length=20, unique=True)
@@ -18,6 +20,9 @@ class SubscriptionPlan(TimeStampedModel):
     can_see_stats = models.BooleanField(default=False)
     sort_order = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+
+    def expires_after(self, months: int):
+        return timedelta(days=30 * months)
 
     class Meta:
         ordering = ('sort_order', 'monthly_price')

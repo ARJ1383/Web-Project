@@ -14,6 +14,11 @@ from .serializers import (
     SubscriptionPlanSerializer,
 )
 
+from django.utils import timezone
+from datetime import timedelta
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 class SubscriptionPlanViewSet(viewsets.ModelViewSet):
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
@@ -22,6 +27,39 @@ class SubscriptionPlanViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
     filterset_fields = ('code', 'is_active')
     ordering_fields = ('sort_order', 'monthly_price')
+
+    @action(detail=True, methods=["post"])
+    def subscribe(self, request, id=None):
+        plan = self.get_object()
+
+        months = int(request.data.get("months", 1))
+
+        if months not in (1,3,6,12):
+            return Response(
+                {"detail":"invalid duration"},
+                status=400
+            )
+
+        user = request.user
+
+        user.subscription_tier = plan.code
+
+        start = timezone.now()
+
+        if (
+            user.subscription_expires_at
+            and user.subscription_expires_at > start
+        ):
+            start = user.subscription_expires_at
+
+        user.subscription_expires_at = start + timedelta(days=30*months)
+
+        user.save()
+
+        return Response({
+            "tier":user.subscription_tier,
+            "expires":user.subscription_expires_at
+        })
 
     def get_permissions(self):
         if self.action in {'list', 'retrieve'}:
