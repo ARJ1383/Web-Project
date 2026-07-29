@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from apps.common.permissions import IsSelfOrAdmin
 from .models import Follow, User
@@ -55,6 +56,11 @@ class LoginAPIView(APIView):
         return Response({'user': UserSerializer(user).data, 'tokens': _tokens_for(user)})
 
 class MeAPIView(APIView):
+    parser_classes = (
+        MultiPartParser,
+        FormParser,
+    )
+    
     def get(self, request):
         return Response(UserSerializer(request.user).data)
 
@@ -80,6 +86,8 @@ class UserViewSet(viewsets.ModelViewSet):
     filterset_fields = ('role', 'gender', 'subscription_tier')
     ordering_fields = ('display_name', 'created_at', 'subscription_tier')
 
+    parser_classes = [MultiPartParser, FormParser]
+    
     def get_queryset(self):
         qs = super().get_queryset()
         role = self.request.query_params.get('role')

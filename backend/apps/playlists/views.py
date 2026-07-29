@@ -7,6 +7,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from apps.catalog.models import Song, SubscriptionPlan
 from apps.common.permissions import IsOwnerOrAdmin
@@ -20,7 +21,7 @@ from .serializers import (
 
 class PlaylistViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, MultiPartParser, FormParser]
 
     def get_queryset(self):
         qs = Playlist.objects.select_related('owner').prefetch_related('items__song').all()

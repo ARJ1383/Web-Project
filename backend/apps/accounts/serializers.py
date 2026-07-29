@@ -97,6 +97,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             profile.save()
         return instance
 
+    def validate_avatar(self, value):
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError(
+                "Avatar too large."
+            )
+
+        return value
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)

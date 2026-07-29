@@ -129,6 +129,14 @@ class AlbumWriteSerializer(serializers.ModelSerializer):
             validated_data.pop('artist', None)
         return super().update(instance, validated_data)
 
+    def validate_cover(self, value):
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError(
+                "Image too large."
+            )
+
+        return value
+
 class SongWriteSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
     album = serializers.PrimaryKeyRelatedField(queryset=Album.objects.all(), required=False, allow_null=True)
@@ -182,3 +190,37 @@ class SongWriteSerializer(serializers.ModelSerializer):
         if request_user.role != 'admin':
             validated_data.pop('artist', None)
         return super().update(instance, validated_data)
+
+    def validate_cover(self, value):
+        if not value:
+            return value
+
+        if not value.content_type.startswith("image/"):
+            raise serializers.ValidationError(
+                "Invalid image."
+            )
+
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError(
+                "Image must be smaller than 5 MB."
+            )
+
+        return value
+
+    def validate_audio_file(self, value):
+        if not value:
+            return value
+
+        if value.size > 20 * 1024 * 1024:
+            raise serializers.ValidationError(
+                "Audio must be smaller than 20 MB."
+            )
+        
+        if not value.name.lower().endswith(
+            (".mp3", ".wav")
+        ):
+            raise serializers.ValidationError(
+                "Unsupported audio format."
+            )
+
+        return value

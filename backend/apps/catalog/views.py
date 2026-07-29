@@ -18,6 +18,7 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class SubscriptionPlanViewSet(viewsets.ModelViewSet):
     queryset = SubscriptionPlan.objects.all()
@@ -89,6 +90,11 @@ class AlbumViewSet(viewsets.ModelViewSet):
     search_fields = ('title', 'artist__display_name', 'artist__username', 'genre')
     ordering_fields = ('published_at', 'created_at', 'title', 'release_year')
 
+    parser_classes = (
+        MultiPartParser,
+        FormParser,
+    )
+
     def get_serializer_class(self):
         if self.action in {'create', 'update', 'partial_update'}:
             return AlbumWriteSerializer
@@ -128,6 +134,10 @@ class SongViewSet(viewsets.ModelViewSet):
     search_fields = ('title', 'artist__display_name', 'artist__username', 'album__title', 'genre')
     ordering_fields = ('published_at', 'created_at', 'title', 'listeners_count', 'streams_count')
 
+    parser_classes = (
+        MultiPartParser,
+        FormParser,
+    )
 
     @action(detail=True, methods=["get"])
     def download(self, request, id=None):
