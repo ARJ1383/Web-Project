@@ -114,6 +114,13 @@ class AlbumViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 class SongViewSet(viewsets.ModelViewSet):
+    from apps.common.permissions import (
+        IsArtistOrAdmin,
+        HasActiveSubscription,
+    )
+    from rest_framework.decorators import action
+    from rest_framework.response import Response
+
     queryset = Song.objects.select_related('artist', 'album').all()
     lookup_field = 'id'
     permission_classes = [IsAuthenticated]
@@ -121,15 +128,36 @@ class SongViewSet(viewsets.ModelViewSet):
     search_fields = ('title', 'artist__display_name', 'artist__username', 'album__title', 'genre')
     ordering_fields = ('published_at', 'created_at', 'title', 'listeners_count', 'streams_count')
 
+
+    @action(detail=True, methods=["get"])
+    def download(self, request, id=None):
+
+        song = self.get_object()
+
+        return Response({
+            "download_url": song.audio_file.url
+    })
+    
     def get_serializer_class(self):
         if self.action in {'create', 'update', 'partial_update'}:
             return SongWriteSerializer
         return SongListSerializer
 
     def get_permissions(self):
-        if self.action in {'list', 'retrieve'}:
-            return [IsAuthenticated()]
-        return [IsAuthenticated(), IsArtistOrAdmin()]
+
+        if self.action in ["download"]:
+            return [
+                IsAuthenticated(),
+                HasActiveSubscription(),
+            ]
+
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [
+                IsAuthenticated(),
+                IsArtistOrAdmin(),
+            ]
+
+        return [IsAuthenticated()]
 
     def perform_update(self, serializer):
         instance = self.get_object()

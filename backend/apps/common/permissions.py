@@ -1,5 +1,18 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+from django.utils import timezone
 
+class HasActiveSubscription(BasePermission):
+
+    def has_permission(self, request, view):
+
+        if request.user.role == "admin":
+            return True
+
+        if not request.user.subscription_expires_at:
+            return False
+
+        return request.user.subscription_expires_at > timezone.now()
+    
 class IsOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
         if request.user and request.user.is_authenticated and getattr(request.user, 'role', None) == 'admin':
