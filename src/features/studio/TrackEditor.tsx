@@ -5,8 +5,6 @@ import { useCurrentUser } from '@/stores/authStore';
 import { useCatalogStore } from '@/stores/catalogStore';
 import { Button, Input } from '@/components/ui';
 import { toast } from '@/stores/toastStore';
-import { readAudioDuration, readFileAsDataUrl } from '@/lib/files';
-import { uid } from '@/lib/format';
 
 /** Publish a single track: audio upload (MP3/WAV/FLAC), cover, metadata, lyrics. */
 export function TrackEditor() {
@@ -39,36 +37,18 @@ export function TrackEditor() {
 
     setPublishing(true);
     try {
-      const audioUrl = URL.createObjectURL(audio);
-      const [coverUrl, duration] = await Promise.all([
-        cover
-          ? readFileAsDataUrl(cover)
-          : Promise.resolve(`https://picsum.photos/seed/${uid('cv')}/400/400`),
-        readAudioDuration(audioUrl),
-      ]);
-
-      addSong({
-        id: uid('song'),
+      // The backend reads the real duration from the uploaded file.
+      await addSong({
         title: title.trim(),
-        artistId: me.id,
-        artistName: 'artistName' in me ? me.artistName : me.displayName,
-        albumId: null,
-        coverUrl,
-        duration,
         genre: genre.trim() || undefined,
         releaseYear: year ? Number(year) : undefined,
         lyrics: lyrics.trim() || undefined,
-        listeners: 0,
-        streams: 0,
-        audioFile: audioUrl,
         collaborators: collaborators
-          ? collaborators
-              .split(',')
-              .map((x) => x.trim())
-              .filter(Boolean)
-          : [],
-        revenue: 0,
-        createdAt: new Date().toISOString(),
+          .split(',')
+          .map((x) => x.trim())
+          .filter(Boolean),
+        cover,
+        audio,
       });
 
       toast.success(t('studio.trackPublished'));
@@ -79,6 +59,8 @@ export function TrackEditor() {
       setCollaborators('');
       setCover(null);
       setAudio(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setPublishing(false);
     }

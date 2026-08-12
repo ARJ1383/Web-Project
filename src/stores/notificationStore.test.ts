@@ -1,38 +1,73 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useNotificationStore } from './notificationStore';
-import { buildSeedDatabase } from '@/lib/seed';
+import { useAuthStore } from './authStore';
+import { setTokens } from '@/lib/api';
+import { mockApi, paginated, signIn } from '@/test/api-mock';
+
+const unread = {
+  id: 11,
+  type: 'new_release' as const,
+  title: 'A new song',
+  body: 'Aurora Skye released Horizon.',
+  link: '/artist/7',
+  read: false,
+  created_at: '2026-06-01T10:00:00Z',
+};
+const readItem = { ...unread, id: 12, title: 'Older', read: true };
 
 beforeEach(() => {
-  useNotificationStore.setState({ notifications: buildSeedDatabase().notifications });
+  vi.unstubAllGlobals();
+  setTokens(null);
+  signIn();
+  useNotificationStore.setState({ notifications: [] });
+  useAuthStore.setState({ currentUser: { id: '1' } as never, ready: true });
 });
 
 describe('notificationStore', () => {
-  it('returns notifications for a user, newest first', () => {
-    const items = useNotificationStore.getState().getByUser('user_sara');
-    expect(items.length).toBeGreaterThan(0);
-    expect(items.every((n) => n.userId === 'user_sara')).toBe(true);
+  it('hydrates the notifications of the signed-in account', async () => {
+    mockApi({ 'GET /notifications/': { body: paginated([unread, readItem]) } });
+    await useNotificationStore.getState().hydrate();
+    const items = useNotificationStore.getState().notifications;
+    expect(items).toHaveLength(2);
+    expect(items[0].userId).toBe('1');
+    expect(items[0].link).toBe('/artist/7');
   });
 
-  it('counts unread notifications per user', () => {
-    expect(useNotificationStore.getState().unreadCount('user_sara')).toBe(1);
+  it('counts the unread ones', async () => {
+    mockApi({ 'GET /notifications/': { body: paginated([unread, readItem]) } });
+    await useNotificationStore.getState().hydrate();
+    expect(useNotificationStore.getState().unreadCount()).toBe(1);
   });
 
-  it('marks a single notification as read', () => {
-    useNotificationStore.getState().markRead('ntf_1');
-    expect(useNotificationStore.getState().unreadCount('user_sara')).toBe(0);
+  it('stays empty when nobody is signed in', async () => {
+    useAuthStore.setState({ currentUser: null });
+    mockApi({});
+    await useNotificationStore.getState().hydrate();
+    expect(useNotificationStore.getState().notifications).toEqual([]);
   });
 
-  it('marks all of a user notifications as read', () => {
-    expect(useNotificationStore.getState().unreadCount('support_reza')).toBe(2);
-    useNotificationStore.getState().markAllRead('support_reza');
-    expect(useNotificationStore.getState().unreadCount('support_reza')).toBe(0);
+  it('marks a single notification read', async () => {
+    useNotificationStore.setState({ notifications: [{ id: '11', read: false } as never] });
+    const { calls } = mockApi({ 'PATCH /notifications/11/': { body: { ...unread, read: true } } });
+    await useNotificationStore.getState().markRead('11');
+    expect(calls[0].body).toEqual({ read: true });
+    expect(useNotificationStore.getState().unreadCount()).toBe(0);
   });
 
-  it('deletes a notification', () => {
-    const before = useNotificationStore.getState().getByUser('user_sara').length;
-    useNotificationStore.getState().remove('ntf_1');
-    const after = useNotificationStore.getState().getByUser('user_sara');
-    expect(after.length).toBe(before - 1);
-    expect(after.some((n) => n.id === 'ntf_1')).toBe(false);
+  it('marks everything read in one call', async () => {
+    useNotificationStore.setState({
+      notifications: [{ id: '11', read: false } as never, { id: '12', read: false } as never],
+    });
+    const { calls } = mockApi({ 'POST /notifications/mark-all-read/': { body: { updated: 2 } } });
+    await useNotificationStore.getState().markAllRead();
+    expect(calls[0].path).toBe('/notifications/mark-all-read/');
+    expect(useNotificationStore.getState().unreadCount()).toBe(0);
+  });
+
+  it('deletes a notification', async () => {
+    useNotificationStore.setState({ notifications: [{ id: '11', read: true } as never] });
+    mockApi({ 'DELETE /notifications/11/': { status: 204 } });
+    await useNotificationStore.getState().remove('11');
+    expect(useNotificationStore.getState().notifications).toHaveLength(0);
   });
 });

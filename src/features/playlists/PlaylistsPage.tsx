@@ -23,8 +23,8 @@ export function PlaylistsPage() {
   const max = getCapabilities(user.subscription.tier).maxPlaylists;
   const atLimit = playlists.length >= max;
 
-  const handleCreate = (name: string) => {
-    const created = create(user.id, user.subscription.tier, name);
+  const handleCreate = async (name: string, cover?: File | null) => {
+    const created = await create(name, cover);
     if (!created) toast.error(t('playlists.limitReached', { max: formatLimit(max) }));
   };
 
@@ -70,7 +70,11 @@ export function PlaylistsPage() {
         />
       )}
 
-      <CreatePlaylistModal open={open} onClose={() => setOpen(false)} onCreate={handleCreate} />
+      <CreatePlaylistModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onCreate={(name, cover) => void handleCreate(name, cover)}
+      />
     </div>
   );
 }

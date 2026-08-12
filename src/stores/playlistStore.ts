@@ -1,82 +1,75 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { STORAGE_KEYS, zustandStorage } from '@/lib/storage';
-import { buildSeedPlaylists } from '@/lib/seed';
-import { uid } from '@/lib/format';
-import { canCreatePlaylist } from '@/lib/subscription';
-import type { Playlist, SubscriptionTier } from '@/types/models';
+import { ApiError, formData, request, requestAll } from '@/lib/api';
+import { toPlaylist, type ApiPlaylist } from '@/lib/mappers';
+import type { Playlist } from '@/types/models';
 
 interface PlaylistState {
   playlists: Playlist[];
   getByOwner: (ownerId: string) => Playlist[];
   getById: (id: string) => Playlist | undefined;
-  /** Creates a playlist if the tier limit allows; returns the new playlist or null. */
-  create: (ownerId: string, tier: SubscriptionTier, name: string) => Playlist | null;
-  rename: (id: string, name: string) => void;
-  remove: (id: string) => void;
-  addSong: (playlistId: string, songId: string) => void;
-  removeSong: (playlistId: string, songId: string) => void;
+  hydrate: () => Promise<void>;
+  /** Creates a playlist; returns null when the plan limit rejects it. */
+  create: (name: string, cover?: File | null) => Promise<Playlist | null>;
+  rename: (id: string, name: string) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  addSong: (playlistId: string, songId: string) => Promise<void>;
+  removeSong: (playlistId: string, songId: string) => Promise<void>;
 }
 
-export const usePlaylistStore = create<PlaylistState>()(
-  persist(
-    (set, get) => ({
-      playlists: buildSeedPlaylists(),
+export const usePlaylistStore = create<PlaylistState>()((set, get) => ({
+  playlists: [],
 
-      getByOwner: (ownerId) => get().playlists.filter((p) => p.ownerId === ownerId),
-      getById: (id) => get().playlists.find((p) => p.id === id),
+  getByOwner: (ownerId) => get().playlists.filter((p) => p.ownerId === ownerId),
+  getById: (id) => get().playlists.find((p) => p.id === id),
 
-      create: (ownerId, tier, name) => {
-        const count = get().getByOwner(ownerId).length;
-        if (!canCreatePlaylist(tier, count)) return null;
-        const now = new Date().toISOString();
-        const playlist: Playlist = {
-          id: uid('pl'),
-          name: name.trim(),
-          ownerId,
-          coverUrl: null,
-          songIds: [],
-          createdAt: now,
-          updatedAt: now,
-        };
-        set((s) => ({ playlists: [...s.playlists, playlist] }));
-        return playlist;
-      },
+  hydrate: async () => {
+    const data = await requestAll<ApiPlaylist>('/playlists/');
+    set({ playlists: data.map(toPlaylist) });
+  },
 
-      rename: (id, name) =>
-        set((s) => ({
-          playlists: s.playlists.map((p) =>
-            p.id === id ? { ...p, name: name.trim(), updatedAt: new Date().toISOString() } : p,
-          ),
-        })),
+  create: async (name, cover) => {
+    try {
+      const data = await request<ApiPlaylist>('/playlists/', {
+        method: 'POST',
+        body: formData({ name: name.trim(), cover }),
+      });
+      const playlist = toPlaylist(data);
+      set((s) => ({ playlists: [playlist, ...s.playlists] }));
+      return playlist;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 400) return null;
+      throw error;
+    }
+  },
 
-      remove: (id) => set((s) => ({ playlists: s.playlists.filter((p) => p.id !== id) })),
+  rename: async (id, name) => {
+    const data = await request<ApiPlaylist>(`/playlists/${id}/`, {
+      method: 'PATCH',
+      body: { name: name.trim() },
+    });
+    const playlist = toPlaylist(data);
+    set((s) => ({ playlists: s.playlists.map((p) => (p.id === id ? playlist : p)) }));
+  },
 
-      addSong: (playlistId, songId) =>
-        set((s) => ({
-          playlists: s.playlists.map((p) =>
-            p.id === playlistId && !p.songIds.includes(songId)
-              ? { ...p, songIds: [...p.songIds, songId], updatedAt: new Date().toISOString() }
-              : p,
-          ),
-        })),
+  remove: async (id) => {
+    await request(`/playlists/${id}/`, { method: 'DELETE' });
+    set((s) => ({ playlists: s.playlists.filter((p) => p.id !== id) }));
+  },
 
-      removeSong: (playlistId, songId) =>
-        set((s) => ({
-          playlists: s.playlists.map((p) =>
-            p.id === playlistId
-              ? {
-                  ...p,
-                  songIds: p.songIds.filter((id) => id !== songId),
-                  updatedAt: new Date().toISOString(),
-                }
-              : p,
-          ),
-        })),
-    }),
-    {
-      name: STORAGE_KEYS.playlists,
-      storage: createJSONStorage(() => zustandStorage),
-    },
-  ),
-);
+  addSong: async (playlistId, songId) => {
+    const data = await request<ApiPlaylist>(`/playlists/${playlistId}/songs/${songId}/`, {
+      method: 'POST',
+    });
+    const playlist = toPlaylist(data);
+    set((s) => ({ playlists: s.playlists.map((p) => (p.id === playlistId ? playlist : p)) }));
+  },
+
+  removeSong: async (playlistId, songId) => {
+    await request(`/playlists/${playlistId}/songs/${songId}/`, { method: 'DELETE' });
+    set((s) => ({
+      playlists: s.playlists.map((p) =>
+        p.id === playlistId ? { ...p, songIds: p.songIds.filter((id) => id !== songId) } : p,
+      ),
+    }));
+  },
+}));

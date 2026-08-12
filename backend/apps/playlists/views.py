@@ -1,34 +1,33 @@
 from __future__ import annotations
 
-from django.db import transaction
+from django.db.models import Q
 from rest_framework import status, viewsets
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-
-from apps.catalog.models import Song, SubscriptionPlan
+from apps.catalog.models import Song
 from apps.common.permissions import IsOwnerOrAdmin
 from .models import Playlist, PlaylistItem
 from .serializers import (
     PlaylistDetailSerializer,
     PlaylistListSerializer,
-    PlaylistSongSerializer,
     PlaylistWriteSerializer,
 )
 
 class PlaylistViewSet(viewsets.ModelViewSet):
-    lookup_field = 'id'
-    permission_classes = [IsAuthenticated, MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
+    owner_field = 'owner_id'
+    search_fields = ('name', 'owner__display_name')
+    ordering_fields = ('updated_at', 'created_at', 'name')
 
     def get_queryset(self):
-        qs = Playlist.objects.select_related('owner').prefetch_related('items__song').all()
+        qs = Playlist.objects.select_related('owner').prefetch_related('items__song')
         user = self.request.user
-        if getattr(user, 'role', None) == 'admin':
+        if user.role == 'admin':
             return qs
-        return qs.filter(owner=user)
+        return qs.filter(Q(owner=user) | Q(is_public=True))
 
     def get_serializer_class(self):
         if self.action in {'create', 'update', 'partial_update'}:
@@ -44,50 +43,35 @@ class PlaylistViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        plan = SubscriptionPlan.objects.filter(code=user.subscription_tier).first()
-        playlist_limit = plan.max_playlists if plan else None
-        current_count = Playlist.objects.filter(owner=user).count()
-        if playlist_limit is not None and current_count >= playlist_limit:
-            raise ValidationError({'detail': f'Playlist limit reached for {user.subscription_tier} tier.'})
+        limit = getattr(user.plan, 'max_playlists', None)
+        if limit is not None and Playlist.objects.filter(owner=user).count() >= limit:
+            raise ValidationError(
+                {'detail': f'Playlist limit reached for the {user.subscription_tier} plan.'}
+            )
         serializer.save(owner=user)
 
-    def perform_update(self, serializer):
-        instance = self.get_object()
-        if self.request.user.role != 'admin' and instance.owner_id != self.request.user.id:
-            raise PermissionDenied('You can only edit your own playlists.')
-        serializer.save()
+    @action(detail=True, methods=['post', 'delete'], url_path='songs/(?P<song_id>[0-9]+)')
+    def songs(self, request, pk=None, song_id=None):
+        playlist = self.get_object()
+        if request.method == 'POST':
+            song = get_object_or_404(Song, id=song_id)
+            _, created = PlaylistItem.objects.get_or_create(
+                playlist=playlist,
+                song=song,
+                defaults={'position': playlist.items.count() + 1},
+            )
+            playlist.save(update_fields=['updated_at'])
+            return Response(
+                PlaylistDetailSerializer(playlist).data,
+                status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+            )
 
-    def perform_destroy(self, instance):
-        if self.request.user.role != 'admin' and instance.owner_id != self.request.user.id:
-            raise PermissionDenied('You can only delete your own playlists.')
-        instance.delete()
-
-class PlaylistSongAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def _get_playlist(self, playlist_id):
-        playlist = get_object_or_404(Playlist.objects.select_related('owner'), id=playlist_id)
-        if self.request.user.role != 'admin' and playlist.owner_id != self.request.user.id:
-            raise PermissionDenied('You can only manage songs in your own playlist.')
-        return playlist
-
-    def post(self, request, playlist_id, song_id):
-        playlist = self._get_playlist(playlist_id)
-        song = get_object_or_404(Song, id=song_id)
-        if PlaylistItem.objects.filter(playlist=playlist, song=song).exists():
-            return Response({'detail': 'Song already exists in this playlist.'}, status=status.HTTP_200_OK)
-        next_position = PlaylistItem.objects.filter(playlist=playlist).count() + 1
-        PlaylistItem.objects.create(playlist=playlist, song=song, position=next_position)
-        playlist.save(update_fields=['updated_at'])
-        return Response(PlaylistDetailSerializer(playlist).data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, playlist_id, song_id):
-        playlist = self._get_playlist(playlist_id)
         deleted, _ = PlaylistItem.objects.filter(playlist=playlist, song_id=song_id).delete()
         if not deleted:
-            return Response({'detail': 'Song was not in this playlist.'}, status=status.HTTP_404_NOT_FOUND)
-        items = PlaylistItem.objects.filter(playlist=playlist).order_by('position', 'created_at')
-        for index, item in enumerate(items, start=1):
+            return Response(
+                {'detail': 'Song was not in this playlist.'}, status=status.HTTP_404_NOT_FOUND
+            )
+        for index, item in enumerate(playlist.items.all(), start=1):
             if item.position != index:
                 item.position = index
                 item.save(update_fields=['position'])

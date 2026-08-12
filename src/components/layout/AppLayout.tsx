@@ -5,19 +5,29 @@ import { Topbar } from './Topbar';
 import { MobileNav } from './MobileNav';
 import { PlayerBarSlot } from './PlayerBarSlot';
 import { AudioController } from '@/features/player/AudioController';
-import { useAuthStore } from '@/stores/authStore';
+import i18n from '@/i18n';
+import { useAuthStore, useCurrentUser } from '@/stores/authStore';
 import { useCatalogStore } from '@/stores/catalogStore';
-import { usePlayerStore } from '@/stores/playerStore';
+import { useNotificationStore } from '@/stores/notificationStore';
+import { usePlaylistStore } from '@/stores/playlistStore';
+import { applyUserSettings } from '@/lib/preferences';
+import { toast } from '@/stores/toastStore';
 
 /** Authenticated app shell: sidebar (desktop) / bottom nav (mobile) + player slot. */
 export function AppLayout() {
-  const userId = useAuthStore((s) => s.currentUserId);
+  const userId = useCurrentUser()?.id;
 
-  // The saved "system volume" (Settings) seeds the player on sign-in.
+  // Load everything the shell and its pages read, once per signed-in account,
+  // and apply the preferences stored on that account.
   useEffect(() => {
-    if (!userId) return;
-    const user = useCatalogStore.getState().getUserById(userId);
-    if (user) usePlayerStore.getState().setVolume(user.settings.volume);
+    const user = useAuthStore.getState().currentUser;
+    if (!userId || !user) return;
+    applyUserSettings(user.settings);
+    void Promise.all([
+      useCatalogStore.getState().hydrate(),
+      usePlaylistStore.getState().hydrate(),
+      useNotificationStore.getState().hydrate(),
+    ]).catch(() => toast.error(i18n.t('common.error')));
   }, [userId]);
 
   return (

@@ -36,7 +36,7 @@ export function PlayerPage() {
     const { songs } = useCatalogStore.getState();
     if (songId === usePlayerStore.getState().currentSongId) return;
     if (!songs.some((s) => s.id === songId)) return;
-    startPlayback(
+    void startPlayback(
       songId,
       songs.map((s) => s.id),
     );

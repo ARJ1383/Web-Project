@@ -48,7 +48,7 @@ export function ArtistProfilePage() {
 
         <Button
           variant={isFollowing ? 'secondary' : 'primary'}
-          onClick={() => toggleFollow(me.id, artist.id)}
+          onClick={() => void toggleFollow(artist.id)}
         >
           {isFollowing ? <UserMinus size={16} /> : <UserPlus size={16} />}
           {isFollowing ? t('profile.unfollow') : t('profile.follow')}

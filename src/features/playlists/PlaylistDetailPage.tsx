@@ -30,13 +30,13 @@ export function PlaylistDetailPage() {
   const songs = playlist.songIds.map(getSongById).filter((s): s is NonNullable<typeof s> => !!s);
   const isOwner = playlist.ownerId === me.id;
 
-  const onRename = () => {
-    if (name.trim()) rename(playlist.id, name.trim());
+  const onRename = async () => {
+    if (name.trim()) await rename(playlist.id, name.trim());
     setRenameOpen(false);
   };
 
-  const onDelete = () => {
-    remove(playlist.id);
+  const onDelete = async () => {
+    await remove(playlist.id);
     toast.success(t('common.delete'));
     navigate('/playlists', { replace: true });
   };
@@ -91,7 +91,7 @@ export function PlaylistDetailPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => removeSong(playlist.id, song.id)}
+                    onClick={() => void removeSong(playlist.id, song.id)}
                     aria-label={t('common.delete')}
                   >
                     <X size={16} className="text-muted" />
@@ -127,7 +127,7 @@ export function PlaylistDetailPage() {
             <Button variant="secondary" onClick={() => setRenameOpen(false)}>
               {t('common.cancel')}
             </Button>
-            <Button onClick={onRename}>{t('common.save')}</Button>
+            <Button onClick={() => void onRename()}>{t('common.save')}</Button>
           </>
         }
       >
@@ -143,7 +143,7 @@ export function PlaylistDetailPage() {
             <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="danger" onClick={onDelete}>
+            <Button variant="danger" onClick={() => void onDelete()}>
               {t('common.delete')}
             </Button>
           </>

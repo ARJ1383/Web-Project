@@ -1,8 +1,10 @@
 # Backend Requirements (for Phase 2)
 
-Per the project brief (note #12), while building the Phase-1 frontend we record the
-backend needs it implies. Phase 2 will implement these with **Django + DRF** and replace
-the Local-Storage mock. The data shapes mirror [`src/types/models.ts`](../src/types/models.ts).
+Per the project brief (note #12), while building the Phase-1 frontend we recorded the
+backend needs it implies. This is the design note that shaped the API; the endpoints and
+models as built live in [`backend/README.md`](../backend/README.md), and the payload
+shapes are mapped to [`src/types/models.ts`](../src/types/models.ts) by
+[`src/lib/mappers.ts`](../src/lib/mappers.ts).
 
 ## Models (initial)
 

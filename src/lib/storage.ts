@@ -1,21 +1,14 @@
 /**
  * Typed wrapper around Local Storage.
  *
- * Phase 1 keeps all mock data in the browser (PDF note #13). Zustand's
- * `persist` middleware uses a `StateStorage` adapter that delegates here so we
- * have one place that talks to `window.localStorage` (easy to swap for the real
- * API in Phase 2).
+ * Application data lives in the backend; only device-local preferences (theme,
+ * language) are cached here through Zustand's `persist` middleware.
  */
 import type { StateStorage } from 'zustand/middleware';
 
 export const STORAGE_KEYS = {
-  db: 'trimir:db',
-  auth: 'trimir:auth',
   theme: 'trimir:theme',
   language: 'trimir:language',
-  playlists: 'trimir:playlists',
-  notifications: 'trimir:notifications',
-  dashboard: 'trimir:dashboard',
 } as const;
 
 export function readJSON<T>(key: string, fallback: T): T {
@@ -24,22 +17,6 @@ export function readJSON<T>(key: string, fallback: T): T {
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
-  }
-}
-
-export function writeJSON<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* ignore quota / serialization errors in the mock layer */
-  }
-}
-
-export function removeKey(key: string): void {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    /* noop */
   }
 }
 

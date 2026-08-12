@@ -49,9 +49,9 @@ export function PublishedWorks() {
     setLyrics(song.lyrics ?? '');
   };
 
-  const saveSong = () => {
+  const saveSong = async () => {
     if (!editingSong) return;
-    updateSong(editingSong.id, {
+    await updateSong(editingSong.id, {
       title: title.trim() || editingSong.title,
       genre: genre.trim() || undefined,
       lyrics: lyrics.trim() || undefined,
@@ -60,17 +60,16 @@ export function PublishedWorks() {
     setEditingSong(null);
   };
 
-  const saveAlbum = () => {
+  const saveAlbum = async () => {
     if (!editingAlbum) return;
-    updateAlbum(editingAlbum.id, { title: albumTitle.trim() || editingAlbum.title });
+    await updateAlbum(editingAlbum.id, { title: albumTitle.trim() || editingAlbum.title });
     toast.success(t('studio.saved'));
     setEditingAlbum(null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting) return;
-    if (deleting.kind === 'song') deleteSong(deleting.id);
-    else deleteAlbum(deleting.id);
+    await (deleting.kind === 'song' ? deleteSong(deleting.id) : deleteAlbum(deleting.id));
     toast.success(t('studio.deleted'));
     setDeleting(null);
   };
@@ -199,7 +198,7 @@ export function PublishedWorks() {
             <Button variant="secondary" onClick={() => setEditingSong(null)}>
               {t('common.cancel')}
             </Button>
-            <Button onClick={saveSong}>{t('common.save')}</Button>
+            <Button onClick={() => void saveSong()}>{t('common.save')}</Button>
           </>
         }
       >
@@ -234,7 +233,7 @@ export function PublishedWorks() {
             <Button variant="secondary" onClick={() => setEditingAlbum(null)}>
               {t('common.cancel')}
             </Button>
-            <Button onClick={saveAlbum}>{t('common.save')}</Button>
+            <Button onClick={() => void saveAlbum()}>{t('common.save')}</Button>
           </>
         }
       >
@@ -254,7 +253,7 @@ export function PublishedWorks() {
             <Button variant="secondary" onClick={() => setDeleting(null)}>
               {t('common.cancel')}
             </Button>
-            <Button variant="danger" onClick={confirmDelete}>
+            <Button variant="danger" onClick={() => void confirmDelete()}>
               {t('common.delete')}
             </Button>
           </>

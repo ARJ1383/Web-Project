@@ -1,50 +1,54 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { startPlayback } from './playback';
+import { setTokens } from '@/lib/api';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useCatalogStore } from '@/stores/catalogStore';
 import { useAuthStore } from '@/stores/authStore';
-import { buildSeedDatabase } from '@/lib/seed';
-
-const today = new Date().toISOString().slice(0, 10);
+import { mockApi, signIn } from '@/test/api-mock';
 
 beforeEach(() => {
-  const seed = buildSeedDatabase();
-  useCatalogStore.setState({ users: seed.users, artists: seed.artists, songs: seed.songs });
+  vi.unstubAllGlobals();
+  setTokens(null);
+  signIn();
+  useCatalogStore.setState({
+    songs: [{ id: '5', title: 'Horizon', streams: 100, listeners: 10 } as never],
+  });
   usePlayerStore.setState({ currentSongId: null, queue: [], playing: false });
-  useAuthStore.setState({ currentUserId: 'user_ali' }); // basic tier
+  useAuthStore.setState({
+    currentUser: { id: '1', dailyStreamCount: 0 } as never,
+    ready: true,
+  });
 });
 
 describe('startPlayback (daily stream limit, PDF جدول ۱)', () => {
-  it('plays and counts a stream for a basic user under the limit', () => {
-    useCatalogStore
-      .getState()
-      .updateUser('user_ali', { dailyStreamCount: 0, lastStreamDate: today });
-    expect(startPlayback('song_horizon')).toBe(true);
-    expect(usePlayerStore.getState().currentSongId).toBe('song_horizon');
-    expect(useCatalogStore.getState().getUserById('user_ali')?.dailyStreamCount).toBe(1);
+  it('plays when the backend accepts the stream and applies the new counters', async () => {
+    mockApi({
+      'POST /songs/5/play/': {
+        body: { streams_count: 101, listeners_count: 11, daily_stream_count: 1 },
+      },
+    });
+
+    await expect(startPlayback('5', ['5'])).resolves.toBe(true);
+    expect(usePlayerStore.getState().currentSongId).toBe('5');
+    expect(useCatalogStore.getState().getSongById('5')?.streams).toBe(101);
+    expect(useAuthStore.getState().currentUser?.dailyStreamCount).toBe(1);
   });
 
-  it('blocks a basic user who exhausted the 60-stream daily quota', () => {
-    useCatalogStore
-      .getState()
-      .updateUser('user_ali', { dailyStreamCount: 60, lastStreamDate: today });
-    expect(startPlayback('song_horizon')).toBe(false);
+  it('refuses to play when the daily quota is exhausted', async () => {
+    mockApi({
+      'POST /songs/5/play/': {
+        status: 429,
+        body: { detail: 'Daily stream limit reached.', limit: 60 },
+      },
+    });
+
+    await expect(startPlayback('5')).resolves.toBe(false);
     expect(usePlayerStore.getState().currentSongId).toBeNull();
   });
 
-  it('resets the counter on a new day', () => {
-    useCatalogStore
-      .getState()
-      .updateUser('user_ali', { dailyStreamCount: 60, lastStreamDate: '2020-01-01' });
-    expect(startPlayback('song_horizon')).toBe(true);
-    expect(useCatalogStore.getState().getUserById('user_ali')?.dailyStreamCount).toBe(1);
-  });
-
-  it('never blocks gold users', () => {
-    useAuthStore.setState({ currentUserId: 'user_sara' });
-    useCatalogStore
-      .getState()
-      .updateUser('user_sara', { dailyStreamCount: 10_000, lastStreamDate: today });
-    expect(startPlayback('song_horizon')).toBe(true);
+  it('does not start playback when the request fails', async () => {
+    mockApi({ 'POST /songs/5/play/': { status: 500, body: { detail: 'boom' } } });
+    await expect(startPlayback('5')).resolves.toBe(false);
+    expect(usePlayerStore.getState().playing).toBe(false);
   });
 });

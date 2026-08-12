@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from django.db.models import Q
-from rest_framework import filters, viewsets
-from rest_framework.exceptions import PermissionDenied
+from django.db.models import F, Q
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from apps.common.permissions import IsArtistOrAdmin, IsOwnerOrAdmin
-from .models import Album, Song, SubscriptionPlan
+from rest_framework.response import Response
+from apps.common.permissions import (
+    HasActiveSubscription,
+    IsArtistOrAdmin,
+    IsOwnerOrAdmin,
+    ReadOnlyOrAdmin,
+)
+from apps.notifications.models import NotificationType
+from apps.notifications.services import notify
+from .models import Album, PlayEvent, Song, SubscriptionPlan
 from .serializers import (
     AlbumListSerializer,
     AlbumWriteSerializer,
@@ -14,86 +22,22 @@ from .serializers import (
     SubscriptionPlanSerializer,
 )
 
-from django.utils import timezone
-from datetime import timedelta
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-
 class SubscriptionPlanViewSet(viewsets.ModelViewSet):
+    """Plans are public to signed-in users; only admins change the pricing."""
+
     queryset = SubscriptionPlan.objects.all()
     serializer_class = SubscriptionPlanSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'id'
-    http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
+    permission_classes = [ReadOnlyOrAdmin]
     filterset_fields = ('code', 'is_active')
     ordering_fields = ('sort_order', 'monthly_price')
 
-    @action(detail=True, methods=["post"])
-    def subscribe(self, request, id=None):
-        plan = self.get_object()
-
-        months = int(request.data.get("months", 1))
-
-        if months not in (1,3,6,12):
-            return Response(
-                {"detail":"invalid duration"},
-                status=400
-            )
-
-        user = request.user
-
-        user.subscription_tier = plan.code
-
-        start = timezone.now()
-
-        if (
-            user.subscription_expires_at
-            and user.subscription_expires_at > start
-        ):
-            start = user.subscription_expires_at
-
-        user.subscription_expires_at = start + timedelta(days=30*months)
-
-        user.save()
-
-        return Response({
-            "tier":user.subscription_tier,
-            "expires":user.subscription_expires_at
-        })
-
-    def get_permissions(self):
-        if self.action in {'list', 'retrieve'}:
-            return [IsAuthenticated()]
-        return [IsAuthenticated()]  # admin restrictions can be added later
-
-    def perform_create(self, serializer):
-        if self.request.user.role != 'admin':
-            raise PermissionDenied('Only admins can create pricing plans.')
-        serializer.save()
-
-    def perform_update(self, serializer):
-        if self.request.user.role != 'admin':
-            raise PermissionDenied('Only admins can update pricing plans.')
-        serializer.save()
-
-    def perform_destroy(self, instance):
-        if self.request.user.role != 'admin':
-            raise PermissionDenied('Only admins can delete pricing plans.')
-        instance.delete()
-
 class AlbumViewSet(viewsets.ModelViewSet):
     queryset = Album.objects.select_related('artist').prefetch_related('songs').all()
-    lookup_field = 'id'
     permission_classes = [IsAuthenticated]
+    owner_field = 'artist_id'
     filterset_fields = ('release_type', 'release_year', 'genre', 'artist')
     search_fields = ('title', 'artist__display_name', 'artist__username', 'genre')
     ordering_fields = ('published_at', 'created_at', 'title', 'release_year')
-
-    parser_classes = (
-        MultiPartParser,
-        FormParser,
-    )
 
     def get_serializer_class(self):
         if self.action in {'create', 'update', 'partial_update'}:
@@ -103,79 +47,87 @@ class AlbumViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in {'list', 'retrieve'}:
             return [IsAuthenticated()]
-        return [IsAuthenticated(), IsArtistOrAdmin()]
-
-    def perform_create(self, serializer):
-        serializer.save()
-
-    def perform_update(self, serializer):
-        instance = self.get_object()
-        if self.request.user.role != 'admin' and instance.artist_id != self.request.user.id:
-            raise PermissionDenied('You can only edit your own albums.')
-        serializer.save()
-
-    def perform_destroy(self, instance):
-        if self.request.user.role != 'admin' and instance.artist_id != self.request.user.id:
-            raise PermissionDenied('You can only delete your own albums.')
-        instance.delete()
+        if self.action == 'create':
+            return [IsAuthenticated(), IsArtistOrAdmin()]
+        return [IsAuthenticated(), IsArtistOrAdmin(), IsOwnerOrAdmin()]
 
 class SongViewSet(viewsets.ModelViewSet):
-    from apps.common.permissions import (
-        IsArtistOrAdmin,
-        HasActiveSubscription,
-    )
-    from rest_framework.decorators import action
-    from rest_framework.response import Response
-
-    queryset = Song.objects.select_related('artist', 'album').all()
-    lookup_field = 'id'
     permission_classes = [IsAuthenticated]
+    owner_field = 'artist_id'
+    plan_feature = 'can_download'
     filterset_fields = ('genre', 'release_year', 'is_released', 'artist', 'album')
     search_fields = ('title', 'artist__display_name', 'artist__username', 'album__title', 'genre')
     ordering_fields = ('published_at', 'created_at', 'title', 'listeners_count', 'streams_count')
 
-    parser_classes = (
-        MultiPartParser,
-        FormParser,
-    )
+    def get_queryset(self):
+        qs = Song.objects.select_related('artist', 'album')
+        user = self.request.user
+        if user.role == 'admin':
+            return qs
+        # Unreleased tracks stay visible to their own artist only.
+        return qs.filter(Q(is_released=True) | Q(artist=user))
 
-    @action(detail=True, methods=["get"])
-    def download(self, request, id=None):
-
-        song = self.get_object()
-
-        return Response({
-            "download_url": song.audio_file.url
-    })
-    
     def get_serializer_class(self):
         if self.action in {'create', 'update', 'partial_update'}:
             return SongWriteSerializer
         return SongListSerializer
 
     def get_permissions(self):
-
-        if self.action in ["download"]:
-            return [
-                IsAuthenticated(),
-                HasActiveSubscription(),
-            ]
-
-        if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [
-                IsAuthenticated(),
-                IsArtistOrAdmin(),
-            ]
-
+        if self.action == 'download':
+            return [IsAuthenticated(), HasActiveSubscription()]
+        if self.action == 'create':
+            return [IsAuthenticated(), IsArtistOrAdmin()]
+        if self.action in {'update', 'partial_update', 'destroy'}:
+            return [IsAuthenticated(), IsArtistOrAdmin(), IsOwnerOrAdmin()]
         return [IsAuthenticated()]
 
-    def perform_update(self, serializer):
-        instance = self.get_object()
-        if self.request.user.role != 'admin' and instance.artist_id != self.request.user.id:
-            raise PermissionDenied('You can only edit your own songs.')
-        serializer.save()
+    @action(detail=True, methods=['post'])
+    def play(self, request, pk=None):
+        """Counts one stream against the caller's daily limit."""
+        song = self.get_object()
+        user = request.user
+        if not user.consume_stream():
+            limit = getattr(user.plan, 'daily_stream_limit', 0)
+            return Response(
+                {'detail': 'Daily stream limit reached.', 'limit': limit},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
 
-    def perform_destroy(self, instance):
-        if self.request.user.role != 'admin' and instance.artist_id != self.request.user.id:
-            raise PermissionDenied('You can only delete your own songs.')
-        instance.delete()
+        first_time = not PlayEvent.objects.filter(song=song, user=user).exists()
+        PlayEvent.objects.create(song=song, artist=song.artist, user=user)
+        Song.objects.filter(pk=song.pk).update(
+            streams_count=F('streams_count') + 1,
+            listeners_count=F('listeners_count') + (1 if first_time else 0),
+        )
+        song.refresh_from_db(fields=['streams_count', 'listeners_count'])
+        return Response(
+            {
+                'streams_count': song.streams_count,
+                'listeners_count': song.listeners_count,
+                'daily_stream_count': user.daily_stream_count,
+            }
+        )
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        song = self.get_object()
+        if not song.audio_file:
+            return Response(
+                {'detail': 'This track has no audio file.'}, status=status.HTTP_404_NOT_FOUND
+            )
+        return Response({'download_url': request.build_absolute_uri(song.audio_file.url)})
+
+    def perform_create(self, serializer):
+        song = serializer.save()
+        if song.is_released:
+            self._announce_release(song)
+
+    def _announce_release(self, song) -> None:
+        for follow in song.artist.follower_links.select_related('follower'):
+            notify(
+                follow.follower,
+                NotificationType.NEW_RELEASE,
+                'انتشار اثر جدید',
+                f'{song.artist.display_name} آهنگ تازه‌ای منتشر کرد: «{song.title}».',
+                f'/artist/{song.artist_id}',
+            )

@@ -3,8 +3,7 @@ from __future__ import annotations
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from rest_framework import serializers
-from apps.catalog.models import SubscriptionPlan
-from .models import ArtistProfile, Follow, RoleChoices, User, ArtistStatusChoices
+from .models import ArtistProfile, RoleChoices, User, ArtistStatusChoices
 
 class ArtistProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,8 +21,8 @@ class ArtistProfileSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 class UserSerializer(serializers.ModelSerializer):
-    follower_count = serializers.SerializerMethodField()
-    following_count = serializers.SerializerMethodField()
+    follower_ids = serializers.SerializerMethodField()
+    following_ids = serializers.SerializerMethodField()
     artist_profile = serializers.SerializerMethodField()
 
     class Meta:
@@ -43,27 +42,26 @@ class UserSerializer(serializers.ModelSerializer):
             'notification_limit',
             'volume',
             'language',
+            'theme',
             'daily_stream_count',
             'last_stream_date',
-            'follower_count',
-            'following_count',
+            'follower_ids',
+            'following_ids',
             'artist_profile',
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('id', 'username', 'daily_stream_count', 'last_stream_date', 'created_at', 'updated_at')
+        read_only_fields = fields
 
-    def get_follower_count(self, obj):
-        return obj.follower_links.count()
+    def get_follower_ids(self, obj):
+        return list(obj.follower_links.values_list('follower_id', flat=True))
 
-    def get_following_count(self, obj):
-        return obj.following_links.count()
+    def get_following_ids(self, obj):
+        return list(obj.following_links.values_list('target_id', flat=True))
 
     def get_artist_profile(self, obj):
         profile = getattr(obj, 'artist_profile', None)
-        if not profile:
-            return None
-        return ArtistProfileSerializer(profile).data
+        return ArtistProfileSerializer(profile).data if profile else None
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     artist_name = serializers.CharField(required=False, allow_blank=False)
@@ -80,9 +78,17 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             'notification_limit',
             'volume',
             'language',
+            'theme',
             'artist_name',
             'portfolio_url',
         )
+
+    def validate_avatar(self, value):
+        """Only paid plans may set a profile picture (table 1 of the spec)."""
+        user = self.instance
+        if value and not getattr(user.plan, 'can_upload_avatar', False) and user.role == 'listener':
+            raise serializers.ValidationError('Your plan does not allow a profile picture.')
+        return value
 
     def update(self, instance, validated_data):
         artist_name = validated_data.pop('artist_name', None)
@@ -96,14 +102,6 @@ class UserUpdateSerializer(serializers.ModelSerializer):
                 profile.portfolio_url = portfolio_url
             profile.save()
         return instance
-
-    def validate_avatar(self, value):
-        if value.size > 5 * 1024 * 1024:
-            raise serializers.ValidationError(
-                "Avatar too large."
-            )
-
-        return value
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -132,10 +130,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             role=RoleChoices.LISTENER,
             subscription_tier='basic',
         )
-        basic_plan = SubscriptionPlan.objects.filter(code='basic').first()
-        if basic_plan and basic_plan.daily_stream_limit is not None:
-            user.daily_stream_count = 0
-            user.save(update_fields=['daily_stream_count'])
         return user
 
 class ArtistRegisterSerializer(serializers.ModelSerializer):
@@ -180,5 +174,6 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-class FollowSerializer(serializers.Serializer):
-    target_id = serializers.IntegerField()
+class VerificationSerializer(serializers.Serializer):
+    decision = serializers.ChoiceField(choices=('approve', 'reject'))
+    reason = serializers.CharField(required=False, allow_blank=True)

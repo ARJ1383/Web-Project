@@ -25,8 +25,8 @@ export function SongCard({ song, actions, className }: SongCardProps) {
 
   const songs = useCatalogStore((s) => s.songs);
 
-  const play = () => {
-    const started = startPlayback(
+  const play = async () => {
+    const started = await startPlayback(
       song.id,
       songs.map((s) => s.id),
     );
@@ -42,7 +42,7 @@ export function SongCard({ song, actions, className }: SongCardProps) {
     >
       <button
         type="button"
-        onClick={play}
+        onClick={() => void play()}
         className="group relative shrink-0"
         aria-label={`play ${song.title}`}
       >
@@ -61,7 +61,7 @@ export function SongCard({ song, actions, className }: SongCardProps) {
       <div className="min-w-0 flex-1">
         <button
           type="button"
-          onClick={play}
+          onClick={() => void play()}
           className="block max-w-full truncate text-start text-sm font-semibold text-text hover:underline"
         >
           {song.title}

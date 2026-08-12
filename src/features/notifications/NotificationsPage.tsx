@@ -16,12 +16,9 @@ export function NotificationsPage() {
 
   if (!user) return null;
 
-  const mine = notifications
-    .filter((n) => n.userId === user.id)
-    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
-  // Respect the "max notifications" preference from Settings.
-  const items = mine.slice(0, user.settings.notificationLimit);
-  const unread = mine.filter((n) => !n.read).length;
+  // The backend already scopes and trims the list; keep the newest first.
+  const items = [...notifications].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  const unread = items.filter((n) => !n.read).length;
 
   return (
     <div className="flex max-w-2xl flex-col gap-4">
@@ -35,7 +32,7 @@ export function NotificationsPage() {
           )}
         </div>
         {unread > 0 && (
-          <Button variant="ghost" size="sm" onClick={() => markAllRead(user.id)}>
+          <Button variant="ghost" size="sm" onClick={() => void markAllRead()}>
             <CheckCheck size={16} />
             {t('notifications.markAllRead')}
           </Button>
@@ -45,7 +42,12 @@ export function NotificationsPage() {
       {items.length > 0 ? (
         <div className="flex flex-col gap-2">
           {items.map((n) => (
-            <NotificationCard key={n.id} notification={n} onMarkRead={markRead} onRemove={remove} />
+            <NotificationCard
+              key={n.id}
+              notification={n}
+              onMarkRead={(id) => void markRead(id)}
+              onRemove={(id) => void remove(id)}
+            />
           ))}
         </div>
       ) : (

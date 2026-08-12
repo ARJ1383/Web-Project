@@ -11,7 +11,7 @@ class UserAdmin(DjangoUserAdmin):
         (None, {'fields': ('email', 'password')}),
         ('Profile', {'fields': ('username', 'display_name', 'role', 'avatar', 'bio', 'birth_date', 'gender')}),
         ('Subscription', {'fields': ('subscription_tier', 'subscription_expires_at')}),
-        ('Preferences', {'fields': ('notification_limit', 'volume', 'language', 'daily_stream_count', 'last_stream_date')}),
+        ('Preferences', {'fields': ('notification_limit', 'volume', 'language', 'theme', 'daily_stream_count', 'last_stream_date')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Dates', {'fields': ('last_login', 'date_joined')}),
     )

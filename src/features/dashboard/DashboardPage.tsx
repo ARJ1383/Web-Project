@@ -20,9 +20,8 @@ import { useCurrentUser } from '@/stores/authStore';
 import { useCatalogStore } from '@/stores/catalogStore';
 import { useDashboardStore } from '@/stores/dashboardStore';
 import { useLanguageStore } from '@/stores/languageStore';
-import { useNotificationStore } from '@/stores/notificationStore';
 import { toast } from '@/stores/toastStore';
-import { formatCount, formatDate, formatRelative, uid } from '@/lib/format';
+import { formatCount, formatDate, formatRelative } from '@/lib/format';
 import type { Artist, TicketStatus } from '@/types/models';
 import { cn } from '@/lib/cn';
 
@@ -140,19 +139,18 @@ export function DashboardPage() {
   const user = useCurrentUser();
   const language = useLanguageStore((s) => s.language);
 
-  const catalogUsers = useCatalogStore((s) => s.users);
   const catalogArtists = useCatalogStore((s) => s.artists);
-  const updateArtist = useCatalogStore((s) => s.updateArtist);
+  const verifyArtist = useCatalogStore((s) => s.verifyArtist);
 
   const tickets = useDashboardStore((s) => s.tickets);
   const audits = useDashboardStore((s) => s.auditRecords);
   const pricing = useDashboardStore((s) => s.pricing);
+  const overview = useDashboardStore((s) => s.overview);
+  const hydrate = useDashboardStore((s) => s.hydrate);
   const replyToTicket = useDashboardStore((s) => s.replyToTicket);
   const closeTicket = useDashboardStore((s) => s.closeTicket);
   const settleAudit = useDashboardStore((s) => s.settleAudit);
   const updatePricing = useDashboardStore((s) => s.updatePricing);
-
-  const addNotification = useNotificationStore((s) => s.add);
 
   const [tab, setTab] = useState<TabKey>('verification');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
@@ -166,6 +164,11 @@ export function DashboardPage() {
   }, [pricing]);
 
   const isAdmin = user?.role === 'admin';
+
+  // Tickets, audit rows and the summary numbers all come from the backend.
+  useEffect(() => {
+    void hydrate({ admin: isAdmin }).catch(() => toast.error(t('common.error')));
+  }, [hydrate, isAdmin, t]);
 
   const tabs = useMemo<TabItem[]>(() => {
     const baseTabs: TabItem[] = [
@@ -204,20 +207,9 @@ export function DashboardPage() {
     [tickets, selectedTicketId],
   );
 
-  const openTickets = tickets.filter((ticket) => ticket.status !== 'closed');
-  const totalPendingPayout = audits
-    .filter((record) => record.status === 'pending')
-    .reduce((sum, record) => sum + record.rewardAmount, 0);
-
-  const accounts = [...catalogUsers, ...catalogArtists];
-  const tierCounts = {
-    basic: accounts.filter((acc) => acc.subscription.tier === 'basic').length,
-    silver: accounts.filter((acc) => acc.subscription.tier === 'silver').length,
-    gold: accounts.filter((acc) => acc.subscription.tier === 'gold').length,
-  };
-  const totalAccounts = Math.max(1, accounts.length);
-  const monthlyRevenue =
-    tierCounts.silver * pricing.silverMonthly + tierCounts.gold * pricing.goldMonthly;
+  const tierCounts = overview?.tierCounts ?? { basic: 0, silver: 0, gold: 0 };
+  const totalAccounts = Math.max(1, overview?.totalAccounts ?? 0);
+  const monthlyRevenue = overview?.monthlyRevenue ?? 0;
 
   const paymentShare = [
     {
@@ -239,58 +231,32 @@ export function DashboardPage() {
 
   if (!user) return null;
 
-  const approveArtist = (artist: Artist) => {
-    const now = new Date().toISOString();
-    updateArtist(artist.id, {
-      status: 'approved',
-      verified: true,
-      statusReason: t('dashboard.verification.approvedNote'),
-    });
-    addNotification({
-      id: uid('ntf'),
-      userId: artist.id,
-      type: 'verification_result',
-      title: t('dashboard.verification.approvedToastTitle'),
-      body: t('dashboard.verification.approvedToastBody'),
-      read: false,
-      createdAt: now,
-    });
-    toast.success(t('dashboard.verification.approvedToast'));
+  const decide = async (artist: Artist, decision: 'approve' | 'reject') => {
+    const reason =
+      decision === 'approve'
+        ? t('dashboard.verification.approvedNote')
+        : rejectReason.trim() || t('dashboard.verification.rejectedNote');
+    try {
+      await verifyArtist(artist.id, decision, reason);
+      if (decision === 'approve') toast.success(t('dashboard.verification.approvedToast'));
+      else toast.error(t('dashboard.verification.rejectedToast'));
+      await hydrate({ admin: isAdmin });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('common.error'));
+    }
     setSelectedArtist(null);
     setRejectReason('');
   };
 
-  const rejectArtist = (artist: Artist) => {
-    const now = new Date().toISOString();
-    const reason = rejectReason.trim() || t('dashboard.verification.rejectedNote');
-    updateArtist(artist.id, {
-      status: 'rejected',
-      verified: false,
-      statusReason: reason,
-    });
-    addNotification({
-      id: uid('ntf'),
-      userId: artist.id,
-      type: 'verification_result',
-      title: t('dashboard.verification.rejectedToastTitle'),
-      body: reason,
-      read: false,
-      createdAt: now,
-    });
-    toast.error(t('dashboard.verification.rejectedToast'));
-    setSelectedArtist(null);
-    setRejectReason('');
-  };
-
-  const sendReply = () => {
+  const sendReply = async () => {
     if (!selectedTicket || !replyDraft.trim()) return;
-    replyToTicket(selectedTicket.id, replyDraft.trim(), user.displayName);
+    await replyToTicket(selectedTicket.id, replyDraft.trim());
     toast.success(t('dashboard.ticket.replySent'));
     setReplyDraft('');
   };
 
-  const savePricing = () => {
-    updatePricing({
+  const savePricing = async () => {
+    await updatePricing({
       silverMonthly: Number(pricingDraft.silverMonthly),
       goldMonthly: Number(pricingDraft.goldMonthly),
       currency: pricingDraft.currency,
@@ -315,19 +281,19 @@ export function DashboardPage() {
           <StatCard
             icon={<BadgeCheck size={18} />}
             label={t('dashboard.stats.pendingArtists')}
-            value={String(pendingArtists.length)}
+            value={String(overview?.pendingArtists ?? pendingArtists.length)}
             hint={t('dashboard.stats.pendingArtistsHint')}
           />
           <StatCard
             icon={<TicketIcon size={18} />}
             label={t('dashboard.stats.openTickets')}
-            value={String(openTickets.length)}
+            value={String(overview?.openTickets ?? 0)}
             hint={t('dashboard.stats.openTicketsHint')}
           />
           <StatCard
             icon={<Wallet size={18} />}
             label={t('dashboard.stats.pendingPayout')}
-            value={`${formatCount(totalPendingPayout, language)} ${pricing.currency}`}
+            value={`${formatCount(overview?.pendingPayout ?? 0, language)} ${pricing.currency}`}
             hint={t('dashboard.stats.pendingPayoutHint')}
           />
           <StatCard
@@ -560,8 +526,9 @@ export function DashboardPage() {
                           variant={record.status === 'settled' ? 'secondary' : 'primary'}
                           disabled={record.status === 'settled'}
                           onClick={() => {
-                            settleAudit(record.id);
-                            toast.success(t('dashboard.audit.settledToast'));
+                            void settleAudit(record.id).then(() =>
+                              toast.success(t('dashboard.audit.settledToast')),
+                            );
                           }}
                         >
                           <CheckCircle2 size={16} />
@@ -614,7 +581,7 @@ export function DashboardPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button onClick={savePricing}>
+              <Button onClick={() => void savePricing()}>
                 <FileText size={16} />
                 {t('dashboard.pricing.save')}
               </Button>
@@ -727,11 +694,11 @@ export function DashboardPage() {
               >
                 {t('common.cancel')}
               </Button>
-              <Button variant="danger" onClick={() => rejectArtist(selectedArtist)}>
+              <Button variant="danger" onClick={() => void decide(selectedArtist, 'reject')}>
                 <XCircle size={16} />
                 {t('dashboard.verification.reject')}
               </Button>
-              <Button onClick={() => approveArtist(selectedArtist)}>
+              <Button onClick={() => void decide(selectedArtist, 'approve')}>
                 <CheckCircle2 size={16} />
                 {t('dashboard.verification.approve')}
               </Button>
@@ -823,14 +790,15 @@ export function DashboardPage() {
               <Button
                 variant="danger"
                 onClick={() => {
-                  closeTicket(selectedTicket.id);
-                  toast.success(t('dashboard.ticket.closedToast'));
-                  setSelectedTicketId(null);
+                  void closeTicket(selectedTicket.id).then(() => {
+                    toast.success(t('dashboard.ticket.closedToast'));
+                    setSelectedTicketId(null);
+                  });
                 }}
               >
                 {t('dashboard.ticket.close')}
               </Button>
-              <Button onClick={sendReply} disabled={!replyDraft.trim()}>
+              <Button onClick={() => void sendReply()} disabled={!replyDraft.trim()}>
                 <MessageSquareReply size={16} />
                 {t('dashboard.ticket.reply')}
               </Button>

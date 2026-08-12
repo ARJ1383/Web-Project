@@ -1,60 +1,75 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAuthStore } from './authStore';
-import { useCatalogStore } from './catalogStore';
-import { buildSeedDatabase } from '@/lib/seed';
+import { getTokens, setTokens } from '@/lib/api';
+import { apiUser, mockApi, signIn } from '@/test/api-mock';
+
+const tokens = { access: 'a', refresh: 'r' };
 
 beforeEach(() => {
-  const seed = buildSeedDatabase();
-  useCatalogStore.setState({
-    users: seed.users,
-    artists: seed.artists,
-    songs: seed.songs,
-    albums: seed.albums,
-  });
-  useAuthStore.setState({ currentUserId: null });
+  vi.unstubAllGlobals();
+  setTokens(null);
+  useAuthStore.setState({ currentUser: null, ready: false });
 });
 
 describe('authStore', () => {
-  it('logs in with valid seeded credentials', () => {
-    const result = useAuthStore.getState().login('sara@trimir.app', 'password123');
+  it('logs in, stores the tokens and caches the account', async () => {
+    mockApi({ 'POST /auth/login/': { body: { user: apiUser, tokens } } });
+    const result = await useAuthStore.getState().login('sara@trimir.app', 'password123');
     expect(result.ok).toBe(true);
-    expect(useAuthStore.getState().currentUserId).toBe('user_sara');
+    expect(getTokens()).toEqual(tokens);
+    expect(useAuthStore.getState().currentUser?.displayName).toBe('Sara');
   });
 
-  it('rejects an invalid password', () => {
-    const result = useAuthStore.getState().login('sara@trimir.app', 'wrong');
-    expect(result).toEqual({ ok: false, error: 'auth.invalidCredentials' });
-    expect(useAuthStore.getState().currentUserId).toBeNull();
+  it('surfaces the API message for invalid credentials', async () => {
+    mockApi({ 'POST /auth/login/': { status: 400, body: { detail: 'Invalid credentials.' } } });
+    const result = await useAuthStore.getState().login('sara@trimir.app', 'nope');
+    expect(result).toEqual({ ok: false, error: 'Invalid credentials.' });
+    expect(getTokens()).toBeNull();
   });
 
-  it('registers a new listener and signs them in', () => {
-    const result = useAuthStore.getState().register({
-      displayName: 'Test User',
-      email: 'new@trimir.app',
-      password: 'secret1',
+  it('registers a listener and signs them in', async () => {
+    const { calls } = mockApi({
+      'POST /auth/register/': {
+        status: 201,
+        body: { user: { ...apiUser, subscription_tier: 'basic' }, tokens },
+      },
+    });
+    const result = await useAuthStore.getState().register({
+      displayName: 'Tester',
+      email: 'tester@trimir.app',
+      password: 'Trimir-2026-pass',
+      confirmPassword: 'Trimir-2026-pass',
     });
     expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.user.role).toBe('listener');
-      expect(result.user.subscription.tier).toBe('basic');
-      expect(useAuthStore.getState().currentUserId).toBe(result.user.id);
-    }
+    expect(calls[0].body).toMatchObject({ confirm_password: 'Trimir-2026-pass' });
+    if (result.ok) expect(result.user.subscription.tier).toBe('basic');
   });
 
-  it('refuses to register a duplicate email', () => {
-    const result = useAuthStore.getState().register({
-      displayName: 'Dupe',
-      email: 'sara@trimir.app',
-      password: 'secret1',
+  it('registers an artist as pending', async () => {
+    mockApi({
+      'POST /auth/artist-register/': {
+        status: 201,
+        body: {
+          user: {
+            ...apiUser,
+            role: 'artist',
+            artist_profile: {
+              artist_name: 'New Artist',
+              status: 'pending',
+              verified: false,
+              total_listeners: 0,
+              total_streams: 0,
+            },
+          },
+          tokens,
+        },
+      },
     });
-    expect(result).toEqual({ ok: false, error: 'auth.emailTaken' });
-  });
-
-  it('registers an artist in pending status', () => {
-    const result = useAuthStore.getState().registerArtist({
+    const result = await useAuthStore.getState().registerArtist({
       artistName: 'New Artist',
-      email: 'newartist@trimir.app',
-      password: 'secret1',
+      email: 'artist@trimir.app',
+      password: 'Trimir-2026-pass',
+      confirmPassword: 'Trimir-2026-pass',
     });
     expect(result.ok).toBe(true);
     if (result.ok && 'status' in result.user) {
@@ -63,10 +78,38 @@ describe('authStore', () => {
     }
   });
 
-  it('deletes the current account and logs out', () => {
-    useAuthStore.getState().login('ali@trimir.app', 'password123');
-    useAuthStore.getState().deleteAccount();
-    expect(useAuthStore.getState().currentUserId).toBeNull();
-    expect(useCatalogStore.getState().getUserById('user_ali')).toBeUndefined();
+  it('restores a stored session from /auth/me/', async () => {
+    signIn();
+    mockApi({ 'GET /auth/me/': { body: apiUser } });
+    await useAuthStore.getState().restore();
+    expect(useAuthStore.getState().ready).toBe(true);
+    expect(useAuthStore.getState().currentUser?.id).toBe('1');
+  });
+
+  it('clears a session the backend no longer accepts', async () => {
+    signIn();
+    mockApi({ 'GET /auth/me/': { status: 401, body: {} } });
+    await useAuthStore.getState().restore();
+    expect(useAuthStore.getState().currentUser).toBeNull();
+    expect(getTokens()).toBeNull();
+  });
+
+  it('logs out, blacklisting the refresh token', async () => {
+    signIn();
+    useAuthStore.setState({ currentUser: { id: '1' } as never });
+    const { calls } = mockApi({ 'POST /auth/logout/': { status: 204 } });
+    await useAuthStore.getState().logout();
+    expect(calls[0].body).toEqual({ refresh: 'refresh-token' });
+    expect(getTokens()).toBeNull();
+    expect(useAuthStore.getState().currentUser).toBeNull();
+  });
+
+  it('deletes the account and drops the session', async () => {
+    signIn();
+    useAuthStore.setState({ currentUser: { id: '1' } as never });
+    mockApi({ 'DELETE /auth/me/': { status: 204 } });
+    await useAuthStore.getState().deleteAccount();
+    expect(useAuthStore.getState().currentUser).toBeNull();
+    expect(getTokens()).toBeNull();
   });
 });

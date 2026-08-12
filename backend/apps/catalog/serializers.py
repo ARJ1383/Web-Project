@@ -1,8 +1,17 @@
 from __future__ import annotations
 
+from mutagen import File as AudioMetadata
 from rest_framework import serializers
 from apps.accounts.models import User
 from .models import Album, Song, SubscriptionPlan
+
+def probe_duration(audio) -> int:
+    """Reads the real duration from the uploaded file; 0 when unreadable."""
+    try:
+        metadata = AudioMetadata(audio)
+        return int(metadata.info.length) if metadata and metadata.info else 0
+    except Exception:
+        return 0
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,6 +21,7 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
             'code',
             'name',
             'monthly_price',
+            'currency',
             'max_playlists',
             'daily_stream_limit',
             'can_upload_avatar',
@@ -85,12 +95,13 @@ class SongListSerializer(serializers.ModelSerializer):
             'collaborators',
             'listeners_count',
             'streams_count',
+            'revenue',
             'is_released',
             'published_at',
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        read_only_fields = fields
 
 class AlbumWriteSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
@@ -129,17 +140,11 @@ class AlbumWriteSerializer(serializers.ModelSerializer):
             validated_data.pop('artist', None)
         return super().update(instance, validated_data)
 
-    def validate_cover(self, value):
-        if value.size > 5 * 1024 * 1024:
-            raise serializers.ValidationError(
-                "Image too large."
-            )
-
-        return value
-
 class SongWriteSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
     album = serializers.PrimaryKeyRelatedField(queryset=Album.objects.all(), required=False, allow_null=True)
+    # A missing boolean in multipart data would otherwise be read as False.
+    is_released = serializers.BooleanField(required=False, default=True)
 
     class Meta:
         model = Song
@@ -155,8 +160,6 @@ class SongWriteSerializer(serializers.ModelSerializer):
             'genre',
             'release_year',
             'collaborators',
-            'listeners_count',
-            'streams_count',
             'is_released',
             'published_at',
         )
@@ -183,6 +186,11 @@ class SongWriteSerializer(serializers.ModelSerializer):
         if album and album.artist_id != artist.id and request_user.role != 'admin':
             raise serializers.ValidationError({'album': 'Album must belong to the same artist.'})
         validated_data['artist'] = artist
+        audio = validated_data.get('audio_file')
+        if audio:
+            validated_data['duration_seconds'] = probe_duration(audio) or validated_data.get(
+                'duration_seconds', 0
+            )
         return Song.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
@@ -190,37 +198,3 @@ class SongWriteSerializer(serializers.ModelSerializer):
         if request_user.role != 'admin':
             validated_data.pop('artist', None)
         return super().update(instance, validated_data)
-
-    def validate_cover(self, value):
-        if not value:
-            return value
-
-        if not value.content_type.startswith("image/"):
-            raise serializers.ValidationError(
-                "Invalid image."
-            )
-
-        if value.size > 5 * 1024 * 1024:
-            raise serializers.ValidationError(
-                "Image must be smaller than 5 MB."
-            )
-
-        return value
-
-    def validate_audio_file(self, value):
-        if not value:
-            return value
-
-        if value.size > 20 * 1024 * 1024:
-            raise serializers.ValidationError(
-                "Audio must be smaller than 20 MB."
-            )
-        
-        if not value.name.lower().endswith(
-            (".mp3", ".wav")
-        ):
-            raise serializers.ValidationError(
-                "Unsupported audio format."
-            )
-
-        return value

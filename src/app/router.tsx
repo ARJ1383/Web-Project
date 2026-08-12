@@ -7,6 +7,7 @@ import { HomePage } from '@/features/home/HomePage';
 import { UserProfilePage } from '@/features/profile/UserProfilePage';
 import { ArtistProfilePage } from '@/features/artist/ArtistProfilePage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { PaymentCallbackPage } from '@/features/settings/PaymentCallbackPage';
 import { NotificationsPage } from '@/features/notifications/NotificationsPage';
 import { PlaylistsPage } from '@/features/playlists/PlaylistsPage';
 import { PlaylistDetailPage } from '@/features/playlists/PlaylistDetailPage';
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
           { path: 'profile/:id', element: <UserProfilePage /> },
           { path: 'artist/:id', element: <ArtistProfilePage /> },
           { path: 'settings', element: <SettingsPage /> },
+          { path: 'payment/callback', element: <PaymentCallbackPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
           { path: 'albums', element: <AlbumsPage /> },
           { path: 'albums/:id', element: <AlbumDetailPage /> },

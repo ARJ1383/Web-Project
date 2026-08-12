@@ -1,8 +1,8 @@
 /**
  * Core domain models for Trimir.
  *
- * Phase 1 is a frontend mock; these types are the contract that the Phase 2
- * Django backend will mirror. Keep them framework-agnostic and serializable.
+ * These mirror the Django API payloads after `src/lib/mappers.ts` normalizes
+ * them. Keep them framework-agnostic and serializable.
  */
 
 export type Role = 'listener' | 'artist' | 'support' | 'admin';
@@ -28,14 +28,14 @@ export interface UserSettings {
   /** System volume 0–100. */
   volume: number;
   language: 'fa' | 'en';
+  /** Stored server-side so the look follows the account across devices. */
+  theme: 'dark' | 'light';
 }
 
 export interface User {
   id: string;
   role: Role;
   email: string;
-  /** Mocked password — never do this in a real backend (Phase 2 will hash server-side). */
-  password: string;
   /** System-assigned handle, e.g. `@trimir_8f3a`. Distinct from displayName. */
   username: string;
   displayName: string;
@@ -64,8 +64,6 @@ export interface Artist extends User {
   portfolioUrl?: string;
   totalListeners: number;
   totalStreams: number;
-  albumIds: string[];
-  songIds: string[];
 }
 
 export interface Song {
@@ -87,6 +85,7 @@ export interface Song {
   audioFile?: string;
   collaborators?: string[];
   revenue?: number;
+  isReleased?: boolean;
 }
 
 export interface Album {
@@ -105,6 +104,8 @@ export interface Album {
 export interface Playlist {
   id: string;
   name: string;
+  description?: string;
+  isPublic?: boolean;
   ownerId: string;
   coverUrl: string | null;
   songIds: string[];
@@ -151,6 +152,9 @@ export interface PricingSettings {
   silverMonthly: number;
   goldMonthly: number;
   currency: string;
+  /** Plan ids, so saving a new price patches the right rows. */
+  silverPlanId: string;
+  goldPlanId: string;
 }
 
 export type NotificationType =
@@ -173,11 +177,29 @@ export interface AppNotification {
   link?: string;
 }
 
-/** Shape of the persisted mock database (Local Storage). */
-export interface MockDatabase {
-  users: User[];
-  artists: Artist[];
-  songs: Song[];
-  albums: Album[];
-  notifications: AppNotification[];
+/** Aggregated numbers the admin dashboard shows; all computed by the backend. */
+export interface AdminOverview {
+  tierCounts: Record<SubscriptionTier, number>;
+  totalAccounts: number;
+  monthlyRevenue: number;
+  collectedThisMonth: number;
+  currency: string;
+  pendingArtists: number;
+  openTickets: number;
+  pendingPayout: number;
+}
+
+/** Aggregated numbers for one artist's studio. */
+export interface ArtistReport {
+  month: string;
+  songCount: number;
+  albumCount: number;
+  followerCount: number;
+  totalStreams: number;
+  totalListeners: number;
+  totalRevenue: number;
+  uniqueListeners: number;
+  monthlyStreams: number;
+  monthlyUniqueListeners: number;
+  topSongs: { id: string; title: string; streams: number; listeners: number; revenue: number }[];
 }

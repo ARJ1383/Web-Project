@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+from decimal import Decimal
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,10 +24,16 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'django_filters',
+    'apps.common',
     'apps.accounts',
     'apps.catalog',
     'apps.playlists',
+    'apps.notifications',
+    'apps.support',
+    'apps.billing',
+    'apps.reports',
 ]
 
 MIDDLEWARE = [
@@ -101,7 +108,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'apps.common.pagination.DefaultPagination',
     'PAGE_SIZE': 20,
 }
 
@@ -111,9 +118,21 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+FRONTEND_BASE_URL = env('FRONTEND_BASE_URL', 'http://localhost:5173')
+
+# Zarinpal sandbox; any UUID works as a merchant id there.
+ZARINPAL_BASE_URL = env('ZARINPAL_BASE_URL', 'https://sandbox.zarinpal.com')
+ZARINPAL_MERCHANT_ID = env('ZARINPAL_MERCHANT_ID', 'c8d2f8b6-07c1-496c-9f4c-f8e8afae1955')
+
+# Artist payout formula, kept out of the code so finance can tune it.
+PAYOUT_PER_LISTENER = Decimal(env('PAYOUT_PER_LISTENER', '92'))
+PAYOUT_PER_STREAM = Decimal(env('PAYOUT_PER_STREAM', '4.2'))
+
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+    for origin in env(
+        'CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173'
+    ).split(',')
     if origin.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True

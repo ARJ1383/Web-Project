@@ -1,13 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
 import { useCurrentUser } from '@/stores/authStore';
 import type { Role } from '@/types/models';
 
 /** Blocks unauthenticated access; redirects to /login, preserving the target. */
 export function RequireAuth() {
-  const currentUserId = useAuthStore((s) => s.currentUserId);
+  const user = useCurrentUser();
   const location = useLocation();
-  if (!currentUserId) {
+  if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
   return <Outlet />;

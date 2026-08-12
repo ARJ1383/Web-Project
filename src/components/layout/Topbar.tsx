@@ -4,6 +4,7 @@ import { Bell, Moon, Sun, Languages, LogOut } from 'lucide-react';
 import { useCurrentUser, useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useLanguageStore } from '@/stores/languageStore';
+import { saveSettings } from '@/lib/preferences';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { Avatar, Button } from '@/components/ui';
 
@@ -12,9 +13,21 @@ export function Topbar() {
   const navigate = useNavigate();
   const user = useCurrentUser();
   const logout = useAuthStore((s) => s.logout);
-  const { theme, toggleTheme } = useThemeStore();
-  const { language, toggleLanguage } = useLanguageStore();
-  const unread = useNotificationStore((s) => (user ? s.unreadCount(user.id) : 0));
+  const { theme, setTheme } = useThemeStore();
+  const { language, setLanguage } = useLanguageStore();
+
+  // Preferences are part of the account, so a toggle is also saved server-side.
+  const switchTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    void saveSettings({ theme: next });
+  };
+  const switchLanguage = () => {
+    const next = language === 'fa' ? 'en' : 'fa';
+    setLanguage(next);
+    void saveSettings({ language: next });
+  };
+  const unread = useNotificationStore((s) => s.notifications.filter((n) => !n.read).length);
 
   if (!user) return null;
 
@@ -34,13 +47,13 @@ export function Topbar() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleLanguage}
+          onClick={switchLanguage}
           aria-label={t('settings.language')}
         >
           <Languages size={18} />
           <span className="sr-only">{language}</span>
         </Button>
-        <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t('settings.theme')}>
+        <Button variant="ghost" size="icon" onClick={switchTheme} aria-label={t('settings.theme')}>
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </Button>
 
@@ -61,8 +74,7 @@ export function Topbar() {
           variant="ghost"
           size="icon"
           onClick={() => {
-            logout();
-            navigate('/login');
+            void logout().then(() => navigate('/login'));
           }}
           aria-label={t('nav.logout')}
         >

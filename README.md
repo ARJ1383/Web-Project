@@ -29,12 +29,11 @@ _Trimir = **Tri** + Am**ir** — built by three Amirs._
 
 Trimir is a music-streaming web app developed as the course project. It serves four kinds
 of users — **listeners, artists, support agents, and a system admin** — each with a
-tailored, role-aware experience. **Phase 1 (this repository) is the frontend**, built
-entirely against **mock data persisted in the browser** (Local Storage). **Phase 2** will
-add a Django backend and wire it in.
+tailored, role-aware experience. The repository holds both phases: the **React frontend**
+(`src/`) and the **Django + DRF backend** (`backend/`) it talks to over a REST API.
 
-> پروژه‌ی یک سرویس استریم موسیقی مشابه Spotify. فاز اول کاملاً فرانت‌اند است و داده‌ها به‌صورت
-> ماک در مرورگر (Local Storage) نگهداری می‌شوند؛ فاز دوم بک‌اند جنگو اضافه خواهد شد.
+> پروژه‌ی یک سرویس استریم موسیقی مشابه Spotify. فاز اول فرانت‌اند (React) و فاز دوم بک‌اند
+> جنگو است؛ هر دو در همین ریپو قرار دارند و از طریق REST به هم متصل‌اند.
 
 ## ✨ Highlights
 
@@ -42,9 +41,12 @@ add a Django backend and wire it in.
 - 🌐 **Bilingual FA/EN** with full **RTL/LTR** switching
 - 📱 **Responsive** across desktop, tablet and mobile
 - 🔐 **Role-based** routing & access (listener / artist / support / admin)
-- 💳 **Subscription tiers** (basic / silver / gold) gating features from a single rules module
+- 💳 **Subscription tiers** (basic / silver / gold) — limits and prices come from the backend,
+  so an admin can re-price without a code change
+- 💳 **Payments** through the Zarinpal sandbox gateway
+- 📊 **Aggregated reports** computed in the database (artist stats, admin overview, payouts)
 - 📦 **PWA** — installable & offline-capable
-- ✅ **44 tests** (Vitest + Testing Library), ESLint + Prettier + Husky + commitlint + CI
+- ✅ **72 frontend tests** (Vitest) + **46 backend tests** (Django), ESLint + Prettier + Husky + CI
 
 ## 🧩 Features
 
@@ -55,18 +57,38 @@ add a Django backend and wire it in.
   profiles with discography and verification badge.
 - **Playlists** — create, rename, delete, and manage tracks, with tier-based limits.
 - **Notifications** — role-aware, read/unread states, mark-as-read and empty states.
-- **Settings** — theme, language, audio, notifications, subscription and account controls.
+- **Settings** — theme, language, audio and notification preferences stored on the account,
+  subscription purchase through the payment gateway, and account deletion.
+- **Support** — tickets with a message thread; support agents reply and close them.
+- **Dashboard** — artist verification, tickets, monthly payout audit and subscription pricing.
 - **Theming & i18n** — dark/light themes and bilingual FA/EN with full RTL/LTR support.
 - **PWA** — installable and offline-capable.
 
 ## 🚀 Getting started
 
-Requires **Node 20.19+** and npm.
+Requires **Node 20.19+** with npm, and **Python 3.12+** for the backend.
+
+**Backend** (`http://localhost:8000`):
+
+```bash
+cd backend
+python -m venv .venv && .venv/Scripts/activate   # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python manage.py migrate
+python manage.py seed_demo                        # demo accounts, catalog, tickets
+python manage.py runserver
+```
+
+**Frontend** (`http://localhost:5173`):
 
 ```bash
 npm install        # installs deps + git hooks
-npm run dev        # http://localhost:5173
+npm run dev
 ```
+
+The frontend reads the API base URL from `VITE_API_BASE_URL` (see `.env.example`); it
+defaults to `http://localhost:8000/api`.
 
 ### Demo accounts
 
@@ -82,7 +104,9 @@ All demo accounts use the password **`password123`**:
 | `support@trimir.app` | **Support**           |
 | `admin@trimir.app`   | **Admin**             |
 
-> Mock data lives in the browser. To reset it, clear the site's Local Storage.
+> The accounts above are created by `python manage.py seed_demo`; run it again to top the
+> data back up. Only the browser theme and language are cached locally — everything else
+> lives in the backend.
 
 ## 📜 Scripts
 
@@ -99,8 +123,11 @@ All demo accounts use the password **`password123`**:
 
 ## 🧱 Tech stack
 
-React 18 · Vite · TypeScript · Tailwind CSS · Zustand · React Router · react-i18next ·
-Vitest + Testing Library · vite-plugin-pwa.
+**Frontend:** React 18 · Vite · TypeScript · Tailwind CSS · Zustand · React Router ·
+react-i18next · Vitest + Testing Library · vite-plugin-pwa.
+
+**Backend:** Django 5 · Django REST Framework · SimpleJWT · django-filter · Pillow ·
+mutagen · SQLite.
 
 ## 📂 Project structure
 
@@ -109,12 +136,23 @@ src/
   app/          router + root component
   components/   ui/ (primitives) · common/ (shared widgets) · layout/ (app shell)
   features/     auth · home · profile · artist · settings · notifications · playlists
-  stores/       Zustand stores (auth, catalog, playlists, notifications, theme, language, toast)
-  lib/          storage, seed, subscription rules, formatting, route guards
+  stores/       Zustand stores (auth, catalog, playlists, notifications, dashboard, player, …)
+  lib/          api client, payload mappers, subscription rules, preferences, guards
   i18n/         i18next config + fa/en locales
-  types/        shared domain models (Phase-2 backend contract)
+  types/        shared domain models
   styles/       global CSS + theme tokens
-  test/         setup + helpers
+  test/         setup, render helpers, API mock
+backend/
+  trimir/       settings + root urls
+  apps/
+    accounts/   user, artist profile, follows, auth endpoints
+    catalog/    subscription plans, albums, songs, play events
+    playlists/  playlists and their items
+    notifications/ in-app notifications
+    support/    tickets and messages
+    billing/    payments through the Zarinpal sandbox
+    reports/    aggregated reports and artist payouts
+    common/     shared model/permission/upload helpers + seed_demo command
 ```
 
 See [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for architecture & coding rules, and
@@ -124,9 +162,9 @@ See [docs/CONVENTIONS.md](docs/CONVENTIONS.md) for architecture & coding rules, 
 
 ## 🛣️ Roadmap
 
-- **Phase 1 — Frontend (mock):** this repository.
-- **Phase 2 — Backend:** Django + DRF, real auth, file uploads, payments, aggregated
-  reports, and integration with this frontend. Optional: Dockerized `docker compose up`.
+- **Phase 1 — Frontend:** done (`src/`).
+- **Phase 2 — Backend & integration:** done (`backend/`) — JWT auth, file uploads, payment
+  gateway, aggregated reports and the frontend wired to the API.
 
 ## License
 

@@ -15,12 +15,13 @@ type Mode = 'listener' | 'artist';
 export function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { register, registerArtist, currentUserId } = useAuthStore();
+  const { register, registerArtist, currentUser } = useAuthStore();
 
   const [mode, setMode] = useState<Mode>('listener');
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // listener fields
   const [form, setForm] = useState({
@@ -40,12 +41,12 @@ export function RegisterPage() {
     portfolioUrl: '',
   });
 
-  if (currentUserId) return <Navigate to="/" replace />;
+  if (currentUser) return <Navigate to="/" replace />;
 
   const setField = (key: keyof typeof form, value: string | boolean) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const submitListener = (e: React.FormEvent) => {
+  const submitListener = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     const parsed = registerSchema.safeParse(form as RegisterValues);
@@ -54,13 +55,16 @@ export function RegisterPage() {
       return;
     }
     setErrors({});
-    const result = register({
+    setSubmitting(true);
+    const result = await register({
       displayName: form.displayName,
       email: form.email,
       password: form.password,
+      confirmPassword: form.confirmPassword,
       birthDate: form.birthDate || undefined,
       gender: form.gender,
     });
+    setSubmitting(false);
     if (!result.ok) {
       setFormError(t(result.error));
       return;
@@ -69,7 +73,7 @@ export function RegisterPage() {
     navigate('/', { replace: true });
   };
 
-  const submitArtist = (e: React.FormEvent) => {
+  const submitArtist = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     const parsed = artistRegisterSchema.safeParse(artist);
@@ -78,12 +82,15 @@ export function RegisterPage() {
       return;
     }
     setErrors({});
-    const result = registerArtist({
+    setSubmitting(true);
+    const result = await registerArtist({
       artistName: artist.artistName,
       email: artist.email,
       password: artist.password,
+      confirmPassword: artist.password,
       portfolioUrl: artist.portfolioUrl || undefined,
     });
+    setSubmitting(false);
     if (!result.ok) {
       setFormError(t(result.error));
       return;
@@ -117,7 +124,7 @@ export function RegisterPage() {
       </div>
 
       {mode === 'listener' ? (
-        <form onSubmit={submitListener} className="flex flex-col gap-3" noValidate>
+        <form onSubmit={(e) => void submitListener(e)} className="flex flex-col gap-3" noValidate>
           <Input
             label={t('auth.displayName')}
             value={form.displayName}
@@ -189,12 +196,12 @@ export function RegisterPage() {
 
           {formError && <p className="text-sm text-danger">{formError}</p>}
 
-          <Button type="submit" size="lg" className="mt-1 w-full">
+          <Button type="submit" size="lg" className="mt-1 w-full" disabled={submitting}>
             {t('auth.register')}
           </Button>
         </form>
       ) : (
-        <form onSubmit={submitArtist} className="flex flex-col gap-3" noValidate>
+        <form onSubmit={(e) => void submitArtist(e)} className="flex flex-col gap-3" noValidate>
           <Input
             label={t('auth.artistName')}
             value={artist.artistName}
@@ -226,7 +233,7 @@ export function RegisterPage() {
 
           {formError && <p className="text-sm text-danger">{formError}</p>}
 
-          <Button type="submit" size="lg" className="mt-1 w-full">
+          <Button type="submit" size="lg" className="mt-1 w-full" disabled={submitting}>
             {t('auth.register')}
           </Button>
         </form>

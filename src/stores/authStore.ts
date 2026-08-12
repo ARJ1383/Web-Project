@@ -1,16 +1,13 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import i18n from '@/i18n';
-import { STORAGE_KEYS, zustandStorage } from '@/lib/storage';
-import { useCatalogStore } from './catalogStore';
-import { useNotificationStore } from './notificationStore';
-import { generateUsername, uid } from '@/lib/format';
+import { ApiError, getTokens, request, setTokens } from '@/lib/api';
+import { toUser, type ApiUser } from '@/lib/mappers';
 import type { Artist, Gender, User } from '@/types/models';
 
 export interface RegisterInput {
   displayName: string;
   email: string;
   password: string;
+  confirmPassword: string;
   birthDate?: string;
   gender?: Gender;
 }
@@ -19,135 +16,141 @@ export interface ArtistRegisterInput {
   artistName: string;
   email: string;
   password: string;
+  confirmPassword: string;
   portfolioUrl?: string;
 }
 
 export type AuthResult = { ok: true; user: User | Artist } | { ok: false; error: string };
 
-interface AuthState {
-  currentUserId: string | null;
-  login: (email: string, password: string) => AuthResult;
-  register: (input: RegisterInput) => AuthResult;
-  registerArtist: (input: ArtistRegisterInput) => AuthResult;
-  logout: () => void;
-  deleteAccount: () => void;
+interface AuthPayload {
+  user: ApiUser;
+  tokens: { access: string; refresh: string };
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      currentUserId: null,
+interface AuthState {
+  currentUser: User | Artist | null;
+  /** False until the stored session has been checked against the API. */
+  ready: boolean;
+  restore: () => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  register: (input: RegisterInput) => Promise<AuthResult>;
+  registerArtist: (input: ArtistRegisterInput) => Promise<AuthResult>;
+  logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
+  /** Replaces the cached account after a profile or subscription change. */
+  setCurrentUser: (user: User | Artist | null) => void;
+  refreshCurrentUser: () => Promise<void>;
+}
 
-      login: (email, password) => {
-        const found = useCatalogStore.getState().findByEmail(email);
-        if (!found || found.password !== password) {
-          return { ok: false, error: 'auth.invalidCredentials' };
-        }
-        set({ currentUserId: found.id });
-        return { ok: true, user: found };
-      },
+function failure(error: unknown, fallback: string): AuthResult {
+  if (error instanceof ApiError) return { ok: false, error: error.message || fallback };
+  return { ok: false, error: fallback };
+}
 
-      register: (input) => {
-        const catalog = useCatalogStore.getState();
-        if (catalog.findByEmail(input.email)) {
-          return { ok: false, error: 'auth.emailTaken' };
-        }
-        const user: User = {
-          id: uid('user'),
-          role: 'listener',
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  currentUser: null,
+  ready: false,
+
+  restore: async () => {
+    if (!getTokens()) {
+      set({ ready: true });
+      return;
+    }
+    try {
+      const data = await request<ApiUser>('/auth/me/');
+      set({ currentUser: toUser(data), ready: true });
+    } catch {
+      setTokens(null);
+      set({ currentUser: null, ready: true });
+    }
+  },
+
+  login: async (email, password) => {
+    try {
+      const data = await request<AuthPayload>('/auth/login/', {
+        method: 'POST',
+        body: { email, password },
+        anonymous: true,
+      });
+      setTokens(data.tokens);
+      const user = toUser(data.user);
+      set({ currentUser: user, ready: true });
+      return { ok: true, user };
+    } catch (error) {
+      return failure(error, 'auth.invalidCredentials');
+    }
+  },
+
+  register: async (input) => {
+    try {
+      const data = await request<AuthPayload>('/auth/register/', {
+        method: 'POST',
+        anonymous: true,
+        body: {
           email: input.email,
           password: input.password,
-          username: generateUsername(input.displayName),
-          displayName: input.displayName,
-          avatarUrl: null,
-          birthDate: input.birthDate,
+          confirm_password: input.confirmPassword,
+          display_name: input.displayName,
+          birth_date: input.birthDate || null,
           gender: input.gender,
-          subscription: { tier: 'basic', expiresAt: null },
-          settings: { notificationLimit: 50, volume: 70, language: 'fa' },
-          followerIds: [],
-          followingIds: [],
-          dailyStreamCount: 0,
-          createdAt: new Date().toISOString(),
-        };
-        catalog.addUser(user);
-        set({ currentUserId: user.id });
-        return { ok: true, user };
-      },
+        },
+      });
+      setTokens(data.tokens);
+      const user = toUser(data.user);
+      set({ currentUser: user, ready: true });
+      return { ok: true, user };
+    } catch (error) {
+      return failure(error, 'auth.emailTaken');
+    }
+  },
 
-      registerArtist: (input) => {
-        const catalog = useCatalogStore.getState();
-        if (catalog.findByEmail(input.email)) {
-          return { ok: false, error: 'auth.emailTaken' };
-        }
-        const artist: Artist = {
-          id: uid('artist'),
-          role: 'artist',
+  registerArtist: async (input) => {
+    try {
+      const data = await request<AuthPayload>('/auth/artist-register/', {
+        method: 'POST',
+        anonymous: true,
+        body: {
           email: input.email,
           password: input.password,
-          username: generateUsername(input.artistName),
-          displayName: input.artistName,
-          artistName: input.artistName,
-          avatarUrl: null,
-          status: 'pending',
-          verified: false,
-          portfolioUrl: input.portfolioUrl,
-          subscription: { tier: 'basic', expiresAt: null },
-          settings: { notificationLimit: 50, volume: 70, language: 'fa' },
-          followerIds: [],
-          followingIds: [],
-          dailyStreamCount: 0,
-          totalListeners: 0,
-          totalStreams: 0,
-          albumIds: [],
-          songIds: [],
-          createdAt: new Date().toISOString(),
-        };
-        catalog.addArtist(artist);
+          confirm_password: input.confirmPassword,
+          artist_name: input.artistName,
+          portfolio_url: input.portfolioUrl || '',
+        },
+      });
+      setTokens(data.tokens);
+      const user = toUser(data.user);
+      set({ currentUser: user, ready: true });
+      return { ok: true, user };
+    } catch (error) {
+      return failure(error, 'auth.emailTaken');
+    }
+  },
 
-        // Alert every support/admin account so the request shows up in their
-        // notifications as well as the dashboard queue (PDF §2.6).
-        const now = new Date().toISOString();
-        catalog.users
-          .filter((u) => u.role === 'support' || u.role === 'admin')
-          .forEach((member) => {
-            useNotificationStore.getState().add({
-              id: uid('ntf'),
-              userId: member.id,
-              type: 'new_verification_request',
-              title: i18n.t('notifications.newArtistRequestTitle'),
-              body: i18n.t('notifications.newArtistRequestBody', { name: input.artistName }),
-              read: false,
-              createdAt: now,
-              link: '/dashboard',
-            });
-          });
+  logout: async () => {
+    const refresh = getTokens()?.refresh;
+    if (refresh) {
+      await request('/auth/logout/', { method: 'POST', body: { refresh } }).catch(() => undefined);
+    }
+    setTokens(null);
+    set({ currentUser: null });
+  },
 
-        set({ currentUserId: artist.id });
-        return { ok: true, user: artist };
-      },
+  deleteAccount: async () => {
+    await request('/auth/me/', { method: 'DELETE' });
+    setTokens(null);
+    set({ currentUser: null });
+  },
 
-      logout: () => set({ currentUserId: null }),
+  setCurrentUser: (user) => set({ currentUser: user }),
 
-      deleteAccount: () => {
-        const id = get().currentUserId;
-        if (id) useCatalogStore.getState().removeUser(id);
-        set({ currentUserId: null });
-      },
-    }),
-    {
-      name: STORAGE_KEYS.auth,
-      storage: createJSONStorage(() => zustandStorage),
-    },
-  ),
-);
+  refreshCurrentUser: async () => {
+    if (!get().currentUser) return;
+    const data = await request<ApiUser>('/auth/me/');
+    set({ currentUser: toUser(data) });
+  },
+}));
 
-/** Convenience selector for the currently authenticated user (reactive). */
+/** The currently authenticated account (reactive). */
 export function useCurrentUser(): User | Artist | null {
-  const currentUserId = useAuthStore((s) => s.currentUserId);
-  const users = useCatalogStore((s) => s.users);
-  const artists = useCatalogStore((s) => s.artists);
-  if (!currentUserId) return null;
-  return (
-    users.find((u) => u.id === currentUserId) ?? artists.find((a) => a.id === currentUserId) ?? null
-  );
+  return useAuthStore((s) => s.currentUser);
 }

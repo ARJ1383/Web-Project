@@ -12,17 +12,18 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuthStore((s) => s.login);
-  const currentUserId = useAuthStore((s) => s.currentUserId);
+  const currentUser = useAuthStore((s) => s.currentUser);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotError, setForgotError] = useState<string | null>(null);
 
-  if (currentUserId) return <Navigate to="/" replace />;
+  if (currentUser) return <Navigate to="/" replace />;
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/';
 
@@ -39,7 +40,7 @@ export function LoginPage() {
     toast.success(t('auth.forgotSent'));
   };
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     const parsed = loginSchema.safeParse({ email, password });
@@ -48,7 +49,9 @@ export function LoginPage() {
       return;
     }
     setErrors({});
-    const result = login(email, password);
+    setSubmitting(true);
+    const result = await login(email, password);
+    setSubmitting(false);
     if (!result.ok) {
       setFormError(t(result.error));
       return;
@@ -59,7 +62,7 @@ export function LoginPage() {
 
   return (
     <AuthShell title={t('auth.loginTitle')} subtitle={t('auth.loginSubtitle')}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-4" noValidate>
         <Input
           type="email"
           label={t('auth.email')}
@@ -87,7 +90,7 @@ export function LoginPage() {
           {t('auth.forgotPassword')}
         </button>
 
-        <Button type="submit" size="lg" className="w-full">
+        <Button type="submit" size="lg" className="w-full" disabled={submitting}>
           {t('auth.login')}
         </Button>
       </form>

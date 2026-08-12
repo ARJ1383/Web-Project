@@ -1,16 +1,19 @@
 # Trimir Backend
 
-Django + DRF backend scaffold for the music-streaming project.
+Django + DRF backend for the music-streaming project.
 
-## What is included
+## Apps
 
-- Custom email-based user model with listener / artist / support / admin roles
-- Artist approval profile
-- Songs, albums, playlists, playlist items
-- Subscription plans for dynamic pricing
-- JWT authentication
-- REST CRUD endpoints with role/ownership permissions
-- Multipart upload support for covers, avatars, and audio files
+| App             | Responsibility                                                        |
+| --------------- | --------------------------------------------------------------------- |
+| `accounts`      | email-based user, roles, artist profile & verification, follows, auth |
+| `catalog`       | subscription plans, albums, songs, play events                        |
+| `playlists`     | playlists and their tracks                                            |
+| `notifications` | in-app notifications, trimmed to each user's limit                    |
+| `support`       | tickets and their message threads                                     |
+| `billing`       | subscription payments through the Zarinpal sandbox                    |
+| `reports`       | aggregated reports and monthly artist payouts                         |
+| `common`        | shared model/permission/upload helpers, `seed_demo`                   |
 
 ## Local setup
 
@@ -19,41 +22,62 @@ python -m venv .venv
 source .venv/bin/activate  # on Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-python manage.py makemigrations
 python manage.py migrate
-python manage.py createsuperuser
+python manage.py seed_demo   # demo accounts (password: password123), catalog, tickets
 python manage.py runserver
 ```
 
-## Main API endpoints
+`python manage.py test` runs the suite (46 tests).
 
-- `POST /api/auth/register/`
-- `POST /api/auth/artist-register/`
-- `POST /api/auth/login/`
+## Endpoints
+
+Auth
+
+- `POST /api/auth/register/`, `POST /api/auth/artist-register/`
+- `POST /api/auth/login/`, `POST /api/auth/refresh/`, `POST /api/auth/logout/`
 - `GET/PATCH/DELETE /api/auth/me/`
-- `GET /api/users/`
-- `GET /api/users/<id>/`
-- `POST/DELETE /api/users/<id>/follow/`
-- `GET /api/albums/`
-- `GET /api/albums/<id>/`
-- `POST /api/albums/`
-- `PATCH/PUT/DELETE /api/albums/<id>/`
-- `GET /api/songs/`
-- `GET /api/songs/<id>/`
-- `POST /api/songs/`
-- `PATCH/PUT/DELETE /api/songs/<id>/`
-- `GET /api/playlists/`
-- `GET /api/playlists/<id>/`
-- `POST /api/playlists/`
-- `PATCH/PUT/DELETE /api/playlists/<id>/`
-- `POST /api/playlists/<playlist_id>/songs/<song_id>/`
-- `DELETE /api/playlists/<playlist_id>/songs/<song_id>/`
-- `GET /api/subscription-plans/`
-- `GET /api/subscription-plans/<id>/`
+
+Accounts
+
+- `GET /api/users/`, `GET /api/users/<id>/` (read-only; users edit themselves via `/auth/me/`)
+- `POST|DELETE /api/users/<id>/follow/`
+- `POST /api/users/<id>/verify/` — support/admin approve or reject an artist
+
+Catalog
+
+- `GET /api/subscription-plans/` (admins may `PATCH` prices and limits)
+- `GET|POST /api/albums/`, `GET|PATCH|DELETE /api/albums/<id>/`
+- `GET|POST /api/songs/`, `GET|PATCH|DELETE /api/songs/<id>/`
+- `POST /api/songs/<id>/play/` — counts one stream, enforces the daily plan limit (429)
+- `GET /api/songs/<id>/download/` — plans with `can_download` only
+
+Playlists
+
+- `GET|POST /api/playlists/`, `GET|PATCH|DELETE /api/playlists/<id>/`
+- `POST|DELETE /api/playlists/<id>/songs/<song_id>/`
+
+Notifications & support
+
+- `GET /api/notifications/`, `PATCH|DELETE /api/notifications/<id>/`
+- `POST /api/notifications/mark-all-read/`
+- `GET|POST /api/tickets/`, `POST /api/tickets/<id>/reply/`, `POST /api/tickets/<id>/close/`
+
+Billing
+
+- `POST /api/payments/start/` — creates a pending payment, returns the gateway URL
+- `POST /api/payments/verify/` — confirms the transaction and activates the subscription
+- `GET /api/payments/`
+
+Reports (aggregated in the database)
+
+- `GET /api/reports/artist/?month=YYYY-MM` — the caller's own artist report
+- `GET /api/reports/overview/` — support/admin summary (tiers, revenue, queues)
+- `GET /api/reports/payouts/?month=YYYY-MM`, `POST /api/reports/payouts/<id>/settle/`
 
 ## Notes
 
-- `PUT`/`PATCH` is only exposed where updating the resource is meaningful.
-- Playlist song management uses dedicated subresource endpoints.
-- All media fields are ready for later upload integration.
-- The design is intentionally minimal so Phase 3.2+ can be added without reworking the core models.
+- Lists are paginated (`?page=`, `?page_size=` up to 200) and support `?search=` and `?ordering=`.
+- Counters (`streams_count`, `listeners_count`, `revenue`) are read-only over the API and
+  only change through `POST /api/songs/<id>/play/`.
+- Uploads validate the extension and size; a track's duration is read from the file itself.
+- Payment settings and the payout formula come from the environment — see `.env.example`.

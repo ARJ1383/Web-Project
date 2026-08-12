@@ -5,8 +5,6 @@ import { useCurrentUser } from '@/stores/authStore';
 import { useCatalogStore } from '@/stores/catalogStore';
 import { Button, Input } from '@/components/ui';
 import { toast } from '@/stores/toastStore';
-import { readFileAsDataUrl } from '@/lib/files';
-import { uid } from '@/lib/format';
 
 /** Create an album from the artist's existing single tracks (PDF §2.10). */
 export function AlbumEditor() {
@@ -42,25 +40,16 @@ export function AlbumEditor() {
 
     setCreating(true);
     try {
-      const albumId = uid('album');
-      const coverUrl = cover
-        ? await readFileAsDataUrl(cover)
-        : `https://picsum.photos/seed/${albumId}/400/400`;
-
-      addAlbum({
-        id: albumId,
+      const album = await addAlbum({
         title: title.trim(),
-        artistId: me.id,
-        artistName: 'artistName' in me ? me.artistName : me.displayName,
-        coverUrl,
-        releaseType: 'album',
         genre: genre.trim() || undefined,
         releaseYear: year ? Number(year) : undefined,
-        songIds: [],
-        createdAt: new Date().toISOString(),
+        cover,
       });
 
-      selectedSongs.forEach((songId) => addSongToAlbum(songId, albumId));
+      for (const songId of selectedSongs) {
+        await addSongToAlbum(songId, album.id);
+      }
 
       toast.success(t('studio.albumCreated'));
       setTitle('');
@@ -68,6 +57,8 @@ export function AlbumEditor() {
       setYear('');
       setCover(null);
       setSelectedSongs([]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('common.error'));
     } finally {
       setCreating(false);
     }

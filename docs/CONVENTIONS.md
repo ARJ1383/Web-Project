@@ -11,10 +11,11 @@ project stays clean and maintainable (PDF grading: تمیزی کد + تغییر�
 | Framework | React 18 + Vite                                     |
 | Language  | TypeScript (strict)                                 |
 | Styling   | Tailwind CSS + CSS-variable theme tokens            |
-| State     | Zustand (+ `persist` → Local Storage)               |
+| State     | Zustand (server data via the API client)            |
 | Routing   | React Router v6                                     |
 | i18n      | react-i18next (FA/EN, RTL/LTR)                      |
-| Testing   | Vitest + React Testing Library                      |
+| Backend   | Django 5 + DRF (`backend/`), JWT auth               |
+| Testing   | Vitest + React Testing Library, Django test runner  |
 | PWA       | vite-plugin-pwa                                     |
 | Tooling   | ESLint, Prettier, Husky, commitlint, GitHub Actions |
 
@@ -29,9 +30,9 @@ src/
     layout/    App shell (Sidebar, Topbar, AppLayout, PlayerBarSlot)
   features/    One folder per screen/feature (auth, home, profile, …)
   stores/      Zustand stores (one concern each)
-  lib/         Framework-agnostic helpers (storage, seed, subscription rules, …)
+  lib/         Framework-agnostic helpers (api, mappers, subscription rules, …)
   i18n/        i18next config + locale JSON
-  types/       Shared domain models (the Phase-2 backend contract)
+  types/       Shared domain models (what the mappers produce)
   styles/      Global CSS + theme tokens
   test/        Test setup + helpers
 ```
@@ -63,12 +64,16 @@ components live together.
   `muted`, …) that resolve to CSS variables — never raw hex in components.
 - **RTL-safe styling.** Prefer logical utilities (`ps`/`pe`, `ms`/`me`, `start`/`end`,
   `rtl:`/`ltr:`) so the same code works in both directions.
-- **Stores are the source of truth.** Components read/write through Zustand stores;
-  persistence is handled by the `persist` middleware via `lib/storage.ts`.
-- **Mock layer is swappable.** All persistence goes through `lib/storage.ts`; in Phase 2
-  the stores' actions become API calls with the same shapes from `types/models.ts`.
+- **Stores are the source of truth for the UI.** Components read through selectors and
+  write through store actions; the actions are the only place that calls the API.
+- **One HTTP layer.** Every request goes through `lib/api.ts` (base URL, JWT, refresh,
+  errors), and every payload is normalized by `lib/mappers.ts` so components never see
+  snake_case or numeric ids.
+- **The backend owns the rules.** Subscription limits and prices, stream counting and all
+  report numbers come from the API; `lib/subscription.ts` only caches what it fetched.
 
-## Mock data (Phase 1)
+## Demo data
 
-Seed data lives in `lib/seed.ts` and is loaded into the stores on first run. Demo
-accounts (password `password123`) cover all four roles — see the login screen.
+`python manage.py seed_demo` (in `backend/`) creates the demo accounts — password
+`password123`, covering all four roles — plus the catalog, playlists and tickets. Only the
+theme and language are cached in Local Storage.

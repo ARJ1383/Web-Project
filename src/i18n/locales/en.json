@@ -18,7 +18,8 @@
     "no": "No",
     "optional": "optional",
     "noContent": "Nothing to show here.",
-    "view": "View"
+    "view": "View",
+    "error": "Something went wrong. Please try again."
   },
   "nav": {
     "home": "Home",
@@ -83,7 +84,6 @@
     "username": "Username",
     "bio": "Bio",
     "avatar": "Profile photo",
-    "avatarUrl": "Photo URL",
     "avatarLocked": "Profile photos require a Silver or Gold subscription.",
     "saved": "Profile updated."
   },
@@ -143,7 +143,14 @@
     "deleteAccount": "Delete account",
     "deleteConfirmTitle": "Delete your account?",
     "deleteConfirmBody": "This permanently removes your account and data. This cannot be undone.",
-    "deleted": "Account deleted."
+    "deleted": "Account deleted.",
+    "expiresAt": "Expires on",
+    "payNow": "Pay now",
+    "perMonth": "month",
+    "duration": "Duration",
+    "monthsCount": "{{count}} months",
+    "totalToPay": "Total to pay",
+    "sandboxHint": "The payment runs on the Zarinpal sandbox gateway."
   },
   "notifications": {
     "title": "Notifications",
@@ -169,7 +176,8 @@
     "limitReached": "You've reached your playlist limit ({{max}}). Upgrade to create more.",
     "deleteConfirm": "Delete this playlist?",
     "emptyDetail": "This playlist is empty. Add some songs!",
-    "of": "of"
+    "of": "of",
+    "cover": "Playlist cover"
   },
   "subscription": {
     "basic": "Basic",
@@ -245,7 +253,9 @@
     "deleteConfirm": "Delete this work?",
     "pendingTitle": "Your artist account is pending review",
     "pendingBody": "The studio unlocks once the support team approves your account.",
-    "rejectedTitle": "Your artist request was rejected"
+    "rejectedTitle": "Your artist request was rejected",
+    "uniqueListeners": "Unique listeners",
+    "monthlyStreams": "Streams this month"
   },
   "validation": {
     "required": "This field is required.",
@@ -390,5 +400,23 @@
       "gold": "Gold",
       "monthlyRevenue": "Monthly revenue"
     }
+  },
+  "payment": {
+    "pendingTitle": "Verifying your payment",
+    "pendingBody": "One moment while we confirm the transaction with the gateway.",
+    "paidTitle": "Payment successful",
+    "paidBody": "Your subscription is now active.",
+    "failedTitle": "Payment failed",
+    "failedBody": "The transaction was not confirmed. Any charge is refunded within 72 hours.",
+    "backToSettings": "Back to settings"
+  },
+  "support": {
+    "title": "Support",
+    "newTicket": "New ticket",
+    "subject": "Subject",
+    "message": "Describe the problem",
+    "send": "Send",
+    "sent": "Your ticket was submitted.",
+    "empty": "You have not opened any ticket."
   }
 }

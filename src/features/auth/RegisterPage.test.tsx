@@ -6,7 +6,7 @@ import { applyLanguage } from '@/stores/languageStore';
 
 beforeEach(() => {
   applyLanguage('en');
-  useAuthStore.setState({ currentUserId: null });
+  useAuthStore.setState({ currentUser: null, ready: true });
 });
 
 describe('RegisterPage', () => {

@@ -26,8 +26,7 @@ export function SongPlaylistMenu({ songId }: SongPlaylistMenuProps) {
   if (!me) return null;
 
   const toggle = (playlistId: string, hasSong: boolean) => {
-    if (hasSong) removeSong(playlistId, songId);
-    else addSong(playlistId, songId);
+    void (hasSong ? removeSong(playlistId, songId) : addSong(playlistId, songId));
   };
 
   return (
