@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.db.models import F, Q
+from django.http import FileResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -64,7 +65,12 @@ class SongViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.role == 'admin':
             return qs
-        # Unreleased tracks stay visible to their own artist only.
+        # Unreleased tracks stay visible to their own artist and to users whose
+        # active subscription explicitly grants early access.
+        plan = user.plan
+        early_access = bool(plan and plan.early_access)
+        if early_access:
+            return qs.filter(Q(is_released=True) | Q(artist=user) | Q(is_released=False))
         return qs.filter(Q(is_released=True) | Q(artist=user))
 
     def get_serializer_class(self):
@@ -115,7 +121,9 @@ class SongViewSet(viewsets.ModelViewSet):
             return Response(
                 {'detail': 'This track has no audio file.'}, status=status.HTTP_404_NOT_FOUND
             )
-        return Response({'download_url': request.build_absolute_uri(song.audio_file.url)})
+        filename = song.audio_file.name.rsplit('/', 1)[-1] or f'{song.title}.mp3'
+        response = FileResponse(song.audio_file.open('rb'), as_attachment=True, filename=filename)
+        return response
 
     def perform_create(self, serializer):
         song = serializer.save()

@@ -25,6 +25,7 @@ export function HomePage() {
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, 10);
   const songs = [...allSongs].sort((a, b) => b.streams - a.streams).slice(0, 8);
+  const earlyAccessSongs = allSongs.filter((song) => song.isReleased === false);
   const caps = getCapabilities(user.subscription.tier);
 
   return (
@@ -45,15 +46,15 @@ export function HomePage() {
         )}
       </Showcase>
 
-      {caps.earlyAccess && (
+      {caps.earlyAccess && earlyAccessSongs.length > 0 && (
         <section className="rounded-2xl border border-accent/40 bg-accent/10 p-4 shadow-glow-sm">
           <div className="mb-3 flex items-center gap-2">
             <Sparkles size={18} className="text-accent" />
             <h2 className="text-lg font-bold text-text">{t('home.earlyAccess')}</h2>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {albums.slice(0, 4).map((a) => (
-              <AlbumCard key={a.id} album={a} />
+          <div className="space-y-2">
+            {earlyAccessSongs.slice(0, 8).map((song) => (
+              <SongCard key={song.id} song={song} />
             ))}
           </div>
         </section>

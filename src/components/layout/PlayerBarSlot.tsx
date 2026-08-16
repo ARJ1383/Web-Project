@@ -1,3 +1,4 @@
+import { downloadFile } from '@/lib/api';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -148,15 +149,17 @@ export function PlayerBarSlot() {
             </button>
 
             {caps?.canDownload && (
-              <a
-                href={song.audioFile ?? '/audio/sample.mp3'}
-                download={`${song.title}.mp3`}
+              <button
+                type="button"
+                onClick={() => {
+                  void downloadFile(`/songs/${song.id}/download/`, `${song.title}.mp3`);
+                }}
                 aria-label={t('player.download')}
                 title={t('player.download')}
                 className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-text"
               >
                 <Download size={18} />
-              </a>
+              </button>
             )}
 
             <VolumeSlider className="ms-2 hidden lg:flex" />

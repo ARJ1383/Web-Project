@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from apps.accounts.models import User
 from apps.catalog.models import SubscriptionPlan
+from .gateway import GatewayError
 from .models import Payment, PaymentStatus
 
 class PaymentAPITests(APITestCase):
@@ -47,7 +48,8 @@ class PaymentAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_verify_activates_the_subscription(self):
+    @patch('apps.billing.views.verify_payment', return_value=('REF123456', 'Payment verified by ZarinPal.'))
+    def test_verify_activates_the_subscription(self, verify):
         self._start(months=1)
         response = self.client.post(
             reverse('payment-verify'), {'authority': 'AUTH123', 'status': 'OK'}, format='json'
@@ -57,6 +59,21 @@ class PaymentAPITests(APITestCase):
         self.assertEqual(self.user.subscription_tier, 'gold')
         self.assertTrue(self.user.subscription_active)
         self.assertTrue(self.user.notifications.exists())
+        verify.assert_called_once_with(amount=199000, authority='AUTH123')
+        self.assertEqual(Payment.objects.get(authority='AUTH123').ref_id, 'REF123456')
+
+
+    @patch('apps.billing.views.verify_payment', side_effect=GatewayError('Gateway unavailable.'))
+    def test_gateway_verification_failure_does_not_activate_subscription(self, verify):
+        self._start(months=1)
+        response = self.client.post(
+            reverse('payment-verify'), {'authority': 'AUTH123', 'status': 'OK'}, format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.subscription_tier, 'basic')
+        self.assertEqual(Payment.objects.get(authority='AUTH123').status, PaymentStatus.PENDING)
+        verify.assert_called_once_with(amount=199000, authority='AUTH123')
 
     def test_cancelled_payment_leaves_the_plan_untouched(self):
         self._start()

@@ -2,6 +2,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from apps.accounts.models import ArtistProfile, User
 from .models import Album, PlayEvent, Song, SubscriptionPlan
 
@@ -21,6 +22,7 @@ class CatalogAPITests(APITestCase):
             monthly_price=199000,
             daily_stream_limit=None,
             can_download=True,
+            early_access=True,
             sort_order=3,
         )
         self.admin = User.objects.create_superuser(
@@ -112,6 +114,29 @@ class CatalogAPITests(APITestCase):
         self.listener.save()
         # The plan allows it, but this track has no audio file yet.
         self.assertEqual(self.client.get(url).status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def test_gold_users_can_see_unreleased_songs(self):
+        draft = Song.objects.create(artist=self.artist, title='Early Access', is_released=False)
+        self.listener.subscription_tier = 'gold'
+        self.listener.subscription_expires_at = timezone.now() + timezone.timedelta(days=30)
+        self.listener.save()
+        self.client.force_authenticate(self.listener)
+        response = self.client.get(reverse('song-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(draft.id, [row['id'] for row in response.data['results']])
+
+    def test_download_streams_file_only_after_subscription_permission(self):
+        self.song.audio_file = SimpleUploadedFile('track.mp3', b'fake-audio', content_type='audio/mpeg')
+        self.song.save(update_fields=['audio_file'])
+        self.listener.subscription_tier = 'gold'
+        self.listener.subscription_expires_at = timezone.now() + timezone.timedelta(days=30)
+        self.listener.save()
+        self.client.force_authenticate(self.listener)
+        response = self.client.get(reverse('song-download', args=[self.song.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Disposition'], 'attachment; filename="track.mp3"')
+        self.assertEqual(b''.join(response.streaming_content), b'fake-audio')
 
     def test_only_admins_change_the_pricing(self):
         plan_url = reverse('subscription-plan-detail', args=[self.gold.id])

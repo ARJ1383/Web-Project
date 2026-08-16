@@ -89,7 +89,7 @@ interface RequestOptions {
   anonymous?: boolean;
 }
 
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function authenticatedFetch(path: string, options: RequestOptions = {}): Promise<Response> {
   const { method = 'GET', body, query, anonymous } = options;
   const isForm = body instanceof FormData;
 
@@ -110,11 +110,36 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (access) response = await send(access);
   }
 
+  return response;
+}
+
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const response = await authenticatedFetch(path, options);
+
   if (response.status === 204) return undefined as T;
 
   const payload = await response.json().catch(() => null);
   if (!response.ok) throw new ApiError(response.status, payload);
   return payload as T;
+}
+
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const response = await authenticatedFetch(path);
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new ApiError(response.status, payload);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 /** Reads every page of a paginated endpoint (catalogs are small here). */
