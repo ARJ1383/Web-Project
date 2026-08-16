@@ -15,6 +15,7 @@ from apps.common.permissions import (
 from apps.notifications.models import NotificationType
 from apps.notifications.services import notify
 from .models import Album, PlayEvent, Song, SubscriptionPlan
+from .recommender import recommend_for_user
 from .serializers import (
     AlbumListSerializer,
     AlbumWriteSerializer,
@@ -86,6 +87,22 @@ class SongViewSet(viewsets.ModelViewSet):
         if self.action in {'update', 'partial_update', 'destroy'}:
             return [IsAuthenticated(), IsArtistOrAdmin(), IsOwnerOrAdmin()]
         return [IsAuthenticated()]
+
+    @action(detail=False, methods=['get'], url_path='recommendations')
+    def recommendations(self, request):
+        """Return model-generated, non-random recommendations for the current user."""
+        songs = list(self.get_queryset().select_related('artist', 'album'))
+        ranked = recommend_for_user(request.user.id, songs, limit=6)
+        payload = []
+        for song, score, reason in ranked:
+            payload.append(
+                {
+                    'song': SongListSerializer(song, context={'request': request}).data,
+                    'score': round(score, 6),
+                    'reason': reason,
+                }
+            )
+        return Response(payload)
 
     @action(detail=True, methods=['post'])
     def play(self, request, pk=None):

@@ -138,6 +138,35 @@ class CatalogAPITests(APITestCase):
         self.assertEqual(response['Content-Disposition'], 'attachment; filename="track.mp3"')
         self.assertEqual(b''.join(response.streaming_content), b'fake-audio')
 
+
+    def test_recommendations_are_model_generated_from_play_history(self):
+        related = Song.objects.create(
+            artist=self.artist, title='Rock B', genre='rock', streams_count=2, listeners_count=1
+        )
+        unrelated = Song.objects.create(
+            artist=self.artist, title='Jazz C', genre='jazz', streams_count=1, listeners_count=1
+        )
+        self.song.genre = 'rock'
+        self.song.save(update_fields=['genre'])
+        PlayEvent.objects.create(song=self.song, artist=self.artist, user=self.listener)
+        self.client.force_authenticate(self.listener)
+        response = self.client.get(reverse('song-recommendations'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [item['song']['id'] for item in response.data]
+        self.assertIn(related.id, ids)
+        self.assertNotIn(self.song.id, ids)
+        self.assertTrue(all(item['reason'] for item in response.data))
+
+    def test_recommendations_use_popularity_for_new_users(self):
+        popular = Song.objects.create(
+            artist=self.artist, title='Popular', genre='pop', streams_count=100, listeners_count=40
+        )
+        Song.objects.create(artist=self.artist, title='Less Popular', genre='jazz', streams_count=1, listeners_count=1)
+        self.client.force_authenticate(self.listener)
+        response = self.client.get(reverse('song-recommendations'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]['song']['id'], popular.id)
+
     def test_only_admins_change_the_pricing(self):
         plan_url = reverse('subscription-plan-detail', args=[self.gold.id])
         self.client.force_authenticate(self.listener)

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import { useCurrentUser } from '@/stores/authStore';
@@ -9,6 +10,9 @@ import { PlaylistCard } from '@/components/common/PlaylistCard';
 import { AlbumCard } from '@/components/common/AlbumCard';
 import { SongCard } from '@/components/common/SongCard';
 import { EmptyState } from '@/components/ui';
+import { request } from '@/lib/api';
+import { toSong, type ApiSong } from '@/lib/mappers';
+import type { Song } from '@/types/models';
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -17,6 +21,24 @@ export function HomePage() {
   const allAlbums = useCatalogStore((s) => s.albums);
   const allSongs = useCatalogStore((s) => s.songs);
   const allPlaylists = usePlaylistStore((s) => s.playlists);
+  const [recommendations, setRecommendations] = useState<Song[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    request<Array<{ song: ApiSong; score: number; reason: string }>>('/songs/recommendations/')
+      .then((items) => {
+        if (!cancelled) setRecommendations(items.map((item) => toSong(item.song)));
+      })
+      .catch(() => {
+        if (!cancelled) setRecommendations([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   if (!user) return null;
 
@@ -59,6 +81,22 @@ export function HomePage() {
           </div>
         </section>
       )}
+
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Sparkles size={18} className="text-accent" />
+          <h2 className="text-xl font-bold text-text">{t('home.recommendedSongs')}</h2>
+        </div>
+        {recommendations.length > 0 ? (
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {recommendations.map((song) => (
+              <SongCard key={song.id} song={song} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState title={t('home.emptyShowcase')} />
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-xl font-bold text-text">{t('home.popularSongs')}</h2>

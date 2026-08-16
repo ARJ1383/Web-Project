@@ -74,20 +74,30 @@ ARTISTS = [
 
 ALBUMS = [
     ('Nightfall', 'aurora@trimir.app', 2025, 'Dream Pop'),
+    ('Neon Roads', 'aurora@trimir.app', 2026, 'Dream Pop'),
     ('Drive', 'neon@trimir.app', 2024, 'Synthwave'),
+    ('Electric Nights', 'neon@trimir.app', 2026, 'Synthwave'),
+    ('Study Sessions', 'lofi@trimir.app', 2025, 'Lo-Fi'),
 ]
 
-# title, artist, album, audio file stem, listeners, streams, lyrics
+# title, artist, album, audio file stem, listeners, streams, lyrics, genre, release_year
+# Several coherent genre clusters make the ML recommender visibly learnable in the demo.
 SONGS = [
-    ('Horizon', 'aurora@trimir.app', 'Nightfall', 'song_horizon', 18420, 96000,
-     'در افق دور، نور می‌تابد\nHorizon calls beyond the sea'),
-    ('Aurora Lights', 'aurora@trimir.app', 'Nightfall', 'song_aurora_lights', 15300, 81000, ''),
-    ('Still Water', 'aurora@trimir.app', 'Nightfall', 'song_still_water', 9900, 52000,
-     'Still water runs deep and slow'),
-    ('Midnight Drive', 'neon@trimir.app', 'Drive', 'song_midnight_drive', 9100, 70000, ''),
-    ('Chrome', 'neon@trimir.app', 'Drive', 'song_chrome', 7600, 62000, ''),
-    ('Rainy Window', 'lofi@trimir.app', None, 'song_rainy_window', 30200, 145000,
-     'پشت پنجره، باران می‌بارد'),
+    ('Horizon', 'aurora@trimir.app', 'Nightfall', 'song_horizon', 18420, 96000, 'در افق دور، نور می‌تابد\nHorizon calls beyond the sea', 'Dream Pop', 2025),
+    ('Aurora Lights', 'aurora@trimir.app', 'Nightfall', 'song_aurora_lights', 15300, 81000, '', 'Dream Pop', 2025),
+    ('Still Water', 'aurora@trimir.app', 'Nightfall', 'song_still_water', 9900, 52000, 'Still water runs deep and slow', 'Dream Pop', 2025),
+    ('Moonlit Echo', 'aurora@trimir.app', 'Nightfall', 'song_moonlit_echo', 13200, 73000, '', 'Dream Pop', 2025),
+    ('Velvet Sky', 'aurora@trimir.app', 'Neon Roads', 'song_velvet_sky', 11800, 65000, '', 'Dream Pop', 2026),
+    ('Slow Horizon', 'aurora@trimir.app', 'Neon Roads', 'song_slow_horizon', 10400, 58000, '', 'Dream Pop', 2026),
+    ('Midnight Drive', 'neon@trimir.app', 'Drive', 'song_midnight_drive', 9100, 70000, '', 'Synthwave', 2024),
+    ('Chrome', 'neon@trimir.app', 'Drive', 'song_chrome', 7600, 62000, '', 'Synthwave', 2024),
+    ('Neon Boulevard', 'neon@trimir.app', 'Drive', 'song_neon_boulevard', 6900, 55000, '', 'Synthwave', 2024),
+    ('Static Hearts', 'neon@trimir.app', 'Electric Nights', 'song_static_hearts', 8200, 61000, '', 'Synthwave', 2026),
+    ('Afterglow Circuit', 'neon@trimir.app', 'Electric Nights', 'song_afterglow_circuit', 7300, 49000, '', 'Synthwave', 2026),
+    ('Rainy Window', 'lofi@trimir.app', 'Study Sessions', 'song_rainy_window', 30200, 145000, 'پشت پنجره، باران می‌بارد', 'Lo-Fi', 2025),
+    ('Coffee at Two', 'lofi@trimir.app', 'Study Sessions', 'song_coffee_at_two', 21400, 102000, '', 'Lo-Fi', 2025),
+    ('Paper Notes', 'lofi@trimir.app', 'Study Sessions', 'song_paper_notes', 17600, 88000, '', 'Lo-Fi', 2025),
+    ('Quiet Streets', 'lofi@trimir.app', 'Study Sessions', 'song_quiet_streets', 14900, 76000, '', 'Lo-Fi', 2025),
 ]
 
 class Command(BaseCommand):
@@ -126,7 +136,7 @@ class Command(BaseCommand):
             )
 
         songs: dict[str, Song] = {}
-        for title, artist_email, album_title, stem, listeners, streams, lyrics in SONGS:
+        for title, artist_email, album_title, stem, listeners, streams, lyrics, genre, release_year in SONGS:
             song, _ = Song.objects.update_or_create(
                 title=title,
                 artist=users[artist_email],
@@ -136,6 +146,9 @@ class Command(BaseCommand):
                     'listeners_count': listeners,
                     'streams_count': streams,
                     'revenue': Decimal(streams) * Decimal('4.2'),
+                    'genre': genre,
+                    'release_year': release_year,
+                    'is_released': True,
                     'published_at': timezone.now(),
                 },
             )
@@ -153,10 +166,22 @@ class Command(BaseCommand):
         self._playlist(users['sara@trimir.app'], 'Chill Evenings', [songs['Still Water'], songs['Rainy Window']])
         self._playlist(users['sara@trimir.app'], 'Night Drive', [songs['Midnight Drive'], songs['Chrome']])
 
-        # A play is never unique, so only seed listeners who have not played the song.
-        for listener in ('sara@trimir.app', 'ali@trimir.app', 'nina@trimir.app'):
-            for song in list(songs.values())[:3]:
-                user = users[listener]
+        # Deliberately seed clear listening profiles so the ML recommender can be
+        # demonstrated without first manually building a history in the UI.
+        sara = users['sara@trimir.app']
+        PlayEvent.objects.filter(user=sara).delete()
+        sara_history = ['Horizon', 'Aurora Lights', 'Moonlit Echo', 'Still Water']
+        for title in sara_history:
+            song = songs[title]
+            PlayEvent.objects.create(song=song, artist=song.artist, user=sara)
+
+        for listener, history_titles in (
+            ('ali@trimir.app', ['Midnight Drive', 'Chrome']),
+            ('nina@trimir.app', ['Rainy Window', 'Coffee at Two']),
+        ):
+            user = users[listener]
+            for title in history_titles:
+                song = songs[title]
                 if not PlayEvent.objects.filter(song=song, user=user).exists():
                     PlayEvent.objects.create(song=song, artist=song.artist, user=user)
 

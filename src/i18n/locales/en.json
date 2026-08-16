@@ -71,7 +71,8 @@
     "latestAlbums": "Latest releases",
     "popularSongs": "Popular right now",
     "earlyAccess": "Early access (Gold)",
-    "emptyShowcase": "Nothing here yet."
+    "emptyShowcase": "Nothing here yet.",
+    "recommendedSongs": "Recommended for you"
   },
   "profile": {
     "followers": "Followers",

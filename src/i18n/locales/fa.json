@@ -71,7 +71,8 @@
     "latestAlbums": "تازه‌ترین انتشارها",
     "popularSongs": "محبوب‌های این روزها",
     "earlyAccess": "دسترسی زودهنگام (طلایی)",
-    "emptyShowcase": "هنوز چیزی اینجا نیست."
+    "emptyShowcase": "هنوز چیزی اینجا نیست.",
+    "recommendedSongs": "آهنگ‌های پیشنهادی برای شما"
   },
   "profile": {
     "followers": "دنبال‌کننده",
