@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.github
+.husky
+backend/.venv
+backend/__pycache__
+backend/**/__pycache__
+backend/db.sqlite3
+backend/media
+backend/staticfiles
+*.md
+.env
+.env.*
+!.env.example
+!backend/.env.example
