@@ -24,15 +24,20 @@ export function HomePage() {
   const [recommendations, setRecommendations] = useState<Song[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     let cancelled = false;
+
     request<Array<{ song: ApiSong; score: number; reason: string }>>('/songs/recommendations/')
       .then((items) => {
-        if (!cancelled) setRecommendations(items.map((item) => toSong(item.song)));
+        if (!cancelled) {
+          setRecommendations(items.map((item) => toSong(item.song)));
+        }
       })
       .catch(() => {
-        if (!cancelled) setRecommendations([]);
+        if (!cancelled) {
+          setRecommendations([]);
+        }
       });
 
     return () => {
